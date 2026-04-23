@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0C0C0B;
+  --amber: #FFD264;
+  --amber-dim: rgba(255, 210, 100, 0.1);
+  --text: #F0EDE6;
+  --text-muted: rgba(240, 237, 230, 0.5);
+  --border: rgba(240, 237, 230, 0.1);
+  --input-bg: rgba(240, 237, 230, 0.04);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), "DM Sans", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
