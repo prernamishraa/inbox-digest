@@ -6,4 +6,19 @@ export default defineSchema({
     email: v.string(),
     joinedAt: v.number(),
   }).index("by_email", ["email"]),
+
+  users: defineTable({
+    substackUsername: v.string(),
+    categories: v.array(v.string()),
+    about: v.string(),
+    createdAt: v.number(),
+  }).index("by_substackUsername", ["substackUsername"]),
+
+  subscriptions: defineTable({
+    userId: v.id("users"),
+    newsletterName: v.string(),
+    authorName: v.string(),
+    publicationUrl: v.string(),
+    subscriberCount: v.optional(v.number()),
+  }).index("by_userId", ["userId"]),
 });

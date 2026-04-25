@@ -12,18 +12,18 @@ const instrumentSerif = Instrument_Serif({
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["300", "400", "500", "600"],
   variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
-  title: "Inbox Digest — Stop reading. Start knowing.",
+  title: "Inbox Digest — Stop missing the best of Substack",
   description:
-    "Inbox Digest sits in your Gmail, reads every newsletter you are subscribed to, and sends you one clean digest every morning.",
+    "Paste your Substack profile. Get a daily digest of the best posts from your subscriptions, curated by AI and delivered to your inbox.",
   openGraph: {
-    title: "Inbox Digest — Stop reading. Start knowing.",
+    title: "Inbox Digest — Stop missing the best of Substack",
     description:
-      "One clean digest every morning. You get the signal. The AI takes the noise.",
+      "One curated digest, every morning, in your inbox. Built for Substack readers.",
   },
 };
 

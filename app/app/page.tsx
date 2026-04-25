@@ -1,78 +1,83 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { CountingNumber } from "@/components/CountingNumber";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 
 const NOISE_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`;
 
-type SubmitState = "idle" | "loading" | "success" | "duplicate" | "error";
+const SKELETON_WIDTHS = [76, 92, 64, 84, 68, 100, 72, 58, 90, 70, 82, 60, 78, 88, 66, 96];
+
+function parseSubstackUrl(raw: string): string | null {
+  const s = raw.trim();
+  if (!s) return null;
+
+  if (/^@[\w-]+$/.test(s)) return s.slice(1);
+
+  try {
+    const url = new URL(s.startsWith("http") ? s : `https://${s}`);
+
+    if (url.hostname === "substack.com" || url.hostname === "www.substack.com") {
+      const m = url.pathname.match(/^\/@([\w-]+)/);
+      return m ? m[1] : null;
+    }
+
+    if (url.hostname.endsWith(".substack.com")) {
+      const sub = url.hostname.replace(/\.substack\.com$/, "");
+      return sub && sub !== "www" ? sub : null;
+    }
+  } catch {
+    const m = s.match(/@([\w-]+)/);
+    return m ? m[1] : null;
+  }
+
+  return null;
+}
+
+type CatState = "loading" | "done" | "error";
 
 export default function Home() {
-  const stats = useQuery(api.waitlist.getStats);
-  const joinWaitlist = useMutation(api.waitlist.join);
+  const router = useRouter();
 
-  const [email, setEmail] = useState("");
-  const [submitState, setSubmitState] = useState<SubmitState>("idle");
+  const [profileUrl, setProfileUrl] = useState("");
+  const [urlError, setUrlError] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [catState, setCatState] = useState<CatState>("loading");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [about, setAbout] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  // Tick the displayed stats slightly every few seconds for a live feel
-  const [tickedStats, setTickedStats] = useState({
-    waitlistCount: 0,
-    minSavedPerDay: 180,
-    newslettersHandled: 1240,
-  });
-
-  // Sync real Convex data into tickedStats
   useEffect(() => {
-    if (!stats) return;
-    setTickedStats({
-      waitlistCount: stats.waitlistCount,
-      minSavedPerDay: stats.minSavedPerDay,
-      newslettersHandled: stats.newslettersHandled,
-    });
-  }, [stats]);
-
-  // Gentle ticker: nudge min/newsletters by small random amounts every 4-7s
-  const tickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    const schedule = () => {
-      const delay = 4000 + Math.random() * 3000;
-      tickTimer.current = setTimeout(() => {
-        setTickedStats((prev) => ({
-          ...prev,
-          minSavedPerDay: prev.minSavedPerDay + Math.floor(Math.random() * 3 + 1),
-          newslettersHandled: prev.newslettersHandled + Math.floor(Math.random() * 2 + 1),
-        }));
-        schedule();
-      }, delay);
-    };
-    schedule();
-    return () => {
-      if (tickTimer.current) clearTimeout(tickTimer.current);
-    };
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d: { categories?: string[] }) => {
+        setCategories(d.categories ?? []);
+        setCatState("done");
+      })
+      .catch(() => setCatState("error"));
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email.trim() || submitState === "loading" || submitState === "success") return;
-    setSubmitState("loading");
-    try {
-      const result = await joinWaitlist({ email: email.trim().toLowerCase() });
-      setSubmitState(result.alreadyJoined ? "duplicate" : "success");
-    } catch {
-      setSubmitState("error");
-    }
-  };
+  const toggleCat = useCallback((cat: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(cat)) { next.delete(cat); } else { next.add(cat); }
+      return next;
+    });
+  }, []);
 
-  const buttonLabel =
-    submitState === "loading"
-      ? "Joining..."
-      : submitState === "success"
-      ? "You are in"
-      : submitState === "duplicate"
-      ? "Already joined"
-      : "Join the waitlist";
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const username = parseSubstackUrl(profileUrl);
+    if (!username) {
+      setUrlError("Enter a valid Substack URL — e.g. substack.com/@yourname");
+      return;
+    }
+    setUrlError("");
+    setSubmitting(true);
+    const p = new URLSearchParams({ username });
+    if (selected.size) p.set("categories", [...selected].join(","));
+    if (about.trim()) p.set("about", about.trim());
+    router.push(`/loading?${p.toString()}`);
+  };
 
   return (
     <div
@@ -83,7 +88,7 @@ export default function Home() {
         overflow: "hidden",
       }}
     >
-      {/* Noise layer */}
+      {/* Noise overlay */}
       <div
         aria-hidden
         style={{
@@ -97,31 +102,31 @@ export default function Home() {
         }}
       />
 
-      {/* Amber glow top-right */}
+      {/* Amber glow — top right */}
       <div
         aria-hidden
         style={{
           position: "fixed",
-          top: -160,
-          right: -160,
-          width: 720,
-          height: 720,
+          top: -140,
+          right: -140,
+          width: 680,
+          height: 680,
           background:
-            "radial-gradient(circle at center, rgba(255,210,80,0.14) 0%, rgba(255,185,60,0.06) 42%, transparent 70%)",
+            "radial-gradient(circle at center, rgba(255,210,80,0.13) 0%, rgba(255,185,60,0.05) 44%, transparent 70%)",
           pointerEvents: "none",
           zIndex: 0,
         }}
       />
 
-      {/* Faint amber glow bottom-left for depth */}
+      {/* Faint glow — bottom left */}
       <div
         aria-hidden
         style={{
           position: "fixed",
-          bottom: -200,
-          left: -100,
-          width: 500,
-          height: 500,
+          bottom: -180,
+          left: -80,
+          width: 480,
+          height: 480,
           background:
             "radial-gradient(circle at center, rgba(255,210,80,0.04) 0%, transparent 65%)",
           pointerEvents: "none",
@@ -129,7 +134,6 @@ export default function Home() {
         }}
       />
 
-      {/* Page wrapper */}
       <div
         style={{
           position: "relative",
@@ -156,53 +160,50 @@ export default function Home() {
               letterSpacing: "-0.01em",
             }}
           >
-            Inbox<span style={{ color: "#FFD264" }}>.</span>
+            Inbox<span style={{ color: "#FFD264" }}>Digest</span>
           </span>
           <span
             style={{
-              fontSize: 11,
+              fontSize: 12,
               fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-              fontWeight: 500,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              color: "#FFD264",
-              opacity: 0.8,
+              fontWeight: 400,
+              letterSpacing: "0.02em",
+              color: "rgba(240,237,230,0.36)",
             }}
           >
-            Early Access
+            7-day free trial · ₹299/mo after
           </span>
         </nav>
 
-        {/* Hero */}
+        {/* Main */}
         <main
           style={{
             flex: 1,
             display: "flex",
-            alignItems: "center",
-            padding: "60px 40px 40px",
-            maxWidth: 780,
-            margin: "0 auto",
-            width: "100%",
+            justifyContent: "center",
+            padding: "44px 24px 80px",
           }}
         >
-          <div style={{ width: "100%" }}>
+          <div style={{ width: "100%", maxWidth: 660 }}>
+
             {/* Eyebrow */}
             <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 10,
-                marginBottom: 36,
-                animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.05s both",
+                marginBottom: 28,
+                animation: "fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.05s both",
               }}
             >
               <span
                 style={{
                   display: "block",
-                  width: 22,
+                  width: 20,
                   height: 1,
                   background: "#FFD264",
-                  opacity: 0.6,
+                  opacity: 0.55,
+                  flexShrink: 0,
                 }}
               />
               <span
@@ -210,12 +211,12 @@ export default function Home() {
                   fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                   fontSize: 11,
                   fontWeight: 500,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
+                  letterSpacing: "0.12em",
                   color: "#FFD264",
+                  opacity: 0.85,
                 }}
               >
-                For curious readers
+                For Substack readers
               </span>
             </div>
 
@@ -223,250 +224,396 @@ export default function Home() {
             <h1
               style={{
                 fontFamily: "var(--font-serif), 'Instrument Serif', serif",
-                fontSize: "clamp(52px, 7.5vw, 88px)",
+                fontSize: "clamp(50px, 8vw, 80px)",
                 fontWeight: 400,
-                lineHeight: 1.03,
-                letterSpacing: "-0.02em",
+                lineHeight: 1.05,
+                letterSpacing: "-0.025em",
                 color: "#F0EDE6",
-                marginBottom: 32,
-                animation: "fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.18s both",
+                marginBottom: 20,
+                animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.14s both",
               }}
             >
-              Stop reading.<br />
-              <em style={{ color: "#FFD264", fontStyle: "italic" }}>
-                Start knowing.
-              </em>
+              Stop missing<br />
+              the{" "}
+              <em style={{ fontStyle: "italic", color: "#FFD264" }}>best</em>
+              {" "}of<br />
+              Substack
             </h1>
 
-            {/* Subheading */}
+            {/* Subline */}
             <p
               style={{
                 fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-                fontSize: "clamp(16px, 2vw, 19px)",
-                fontWeight: 300,
-                lineHeight: 1.68,
-                color: "rgba(240,237,230,0.55)",
-                maxWidth: 580,
-                marginBottom: 52,
-                animation: "fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.3s both",
+                fontSize: "clamp(15px, 2vw, 17px)",
+                fontWeight: 400,
+                lineHeight: 1.72,
+                color: "rgba(240,237,230,0.52)",
+                maxWidth: 480,
+                marginBottom: 44,
+                animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.25s both",
               }}
             >
-              Inbox Digest sits in your Gmail, reads every newsletter you are
-              subscribed to, and sends you one clean digest every morning. You
-              get the signal. The AI takes the noise.
+              You follow great writers. We surface what&apos;s worth your time,
+              one curated digest, every morning, in your inbox.
             </p>
 
-            {/* Form */}
+            {/* Form card */}
             <form
               onSubmit={handleSubmit}
               style={{
-                display: "flex",
-                gap: 10,
-                maxWidth: 520,
-                flexWrap: "wrap",
-                animation: "fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.44s both",
+                width: "100%",
+                background: "rgba(240,237,230,0.02)",
+                border: "1px solid rgba(240,237,230,0.08)",
+                borderRadius: 20,
+                padding: "36px 36px 30px",
+                animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.36s both",
               }}
             >
-              <input
-                type="email"
-                required
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (submitState !== "idle" && submitState !== "loading") {
-                    setSubmitState("idle");
-                  }
-                }}
-                placeholder="your@email.com"
-                disabled={submitState === "success"}
+              {/* URL input */}
+              <label
+                htmlFor="profile-url"
                 style={{
-                  flex: "1 1 220px",
-                  minWidth: 0,
+                  display: "block",
+                  fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: "0.08em",
+                  color: "rgba(240,237,230,0.42)",
+                  marginBottom: 10,
+                }}
+              >
+                Your Substack profile URL
+              </label>
+              <input
+                id="profile-url"
+                type="text"
+                value={profileUrl}
+                onChange={(e) => {
+                  setProfileUrl(e.target.value);
+                  if (urlError) setUrlError("");
+                }}
+                placeholder="substack.com/@yourname"
+                className="text-field"
+                style={{
+                  width: "100%",
                   background: "rgba(240,237,230,0.04)",
-                  border: "1px solid rgba(240,237,230,0.12)",
-                  borderRadius: 6,
-                  padding: "14px 18px",
+                  border: `1px solid ${urlError ? "rgba(255,100,80,0.50)" : "rgba(240,237,230,0.10)"}`,
+                  borderRadius: 10,
+                  padding: "13px 16px",
                   fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                   fontSize: 15,
-                  fontWeight: 400,
                   color: "#F0EDE6",
                   outline: "none",
                   transition: "border-color 0.2s, background 0.2s",
                 }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = "rgba(255,210,100,0.4)";
-                  e.target.style.background = "rgba(240,237,230,0.06)";
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = "rgba(240,237,230,0.12)";
-                  e.target.style.background = "rgba(240,237,230,0.04)";
-                }}
               />
-              <button
-                type="submit"
-                disabled={submitState === "loading" || submitState === "success" || submitState === "duplicate"}
+              {urlError && (
+                <p
+                  style={{
+                    marginTop: 8,
+                    fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                    fontSize: 12,
+                    color: "rgba(255,100,80,0.80)",
+                    letterSpacing: "0.01em",
+                  }}
+                >
+                  {urlError}
+                </p>
+              )}
+
+              {/* Categories label */}
+              <div
                 style={{
-                  flexShrink: 0,
-                  background:
-                    submitState === "success"
-                      ? "rgba(255,210,100,0.15)"
-                      : "#FFD264",
-                  color:
-                    submitState === "success"
-                      ? "#FFD264"
-                      : "#0C0C0B",
-                  border:
-                    submitState === "success"
-                      ? "1px solid rgba(255,210,100,0.3)"
-                      : "none",
-                  borderRadius: 6,
-                  padding: "14px 26px",
                   fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-                  fontSize: 14,
+                  fontSize: 11,
                   fontWeight: 500,
-                  letterSpacing: "0.02em",
-                  cursor:
-                    submitState === "loading" || submitState === "success" || submitState === "duplicate"
-                      ? "default"
-                      : "pointer",
-                  whiteSpace: "nowrap",
-                  transition: "opacity 0.2s, transform 0.15s",
-                  opacity: submitState === "loading" ? 0.7 : 1,
+                  letterSpacing: "0.08em",
+                  color: "rgba(240,237,230,0.42)",
+                  margin: "28px 0 12px",
                 }}
               >
-                {buttonLabel}
-              </button>
+                What do you read? Pick a few
+              </div>
+
+              {/* Pills */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {catState === "loading"
+                  ? SKELETON_WIDTHS.map((w, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          width: w,
+                          height: 32,
+                          borderRadius: 100,
+                          background:
+                            "linear-gradient(90deg, rgba(240,237,230,0.05) 0%, rgba(240,237,230,0.09) 50%, rgba(240,237,230,0.05) 100%)",
+                          backgroundSize: "400px 100%",
+                          animation: `shimmer 1.5s ease-in-out infinite`,
+                          animationDelay: `${i * 0.05}s`,
+                        }}
+                      />
+                    ))
+                  : categories.map((cat) => {
+                      const on = selected.has(cat);
+                      return (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={() => toggleCat(cat)}
+                          className={`pill${on ? " pill-on" : ""}`}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "6px 14px",
+                            borderRadius: 100,
+                            border: `1px solid ${on ? "#FFD264" : "rgba(240,237,230,0.10)"}`,
+                            background: on
+                              ? "rgba(255,210,100,0.11)"
+                              : "rgba(240,237,230,0.04)",
+                            color: on ? "#FFD264" : "rgba(240,237,230,0.58)",
+                            fontSize: 13,
+                            fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                            fontWeight: 400,
+                            lineHeight: 1,
+                            cursor: "pointer",
+                            transition:
+                              "border-color 0.15s, background 0.15s, color 0.15s",
+                            animation: "fadeIn 0.25s ease both",
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      );
+                    })}
+              </div>
+
+              {/* Optional about */}
+              <div style={{ marginTop: 28 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                      fontSize: 11,
+                      fontWeight: 500,
+                      letterSpacing: "0.08em",
+                      color: "rgba(240,237,230,0.42)",
+                    }}
+                  >
+                    Anything specific you love?
+                  </span>
+                  <span
+                    style={{
+                      fontSize: 10,
+                      fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                      fontWeight: 400,
+                      letterSpacing: "0.04em",
+                      color: "rgba(240,237,230,0.28)",
+                      background: "rgba(240,237,230,0.06)",
+                      borderRadius: 4,
+                      padding: "2px 7px",
+                    }}
+                  >
+                    optional
+                  </span>
+                </div>
+                <textarea
+                  value={about}
+                  onChange={(e) => setAbout(e.target.value)}
+                  placeholder="e.g. long-form essays, contrarian takes, founder stories…"
+                  rows={2}
+                  className="text-field"
+                  style={{
+                    width: "100%",
+                    resize: "none",
+                    background: "rgba(240,237,230,0.04)",
+                    border: "1px solid rgba(240,237,230,0.10)",
+                    borderRadius: 10,
+                    padding: "13px 16px",
+                    fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                    fontSize: 14,
+                    color: "#F0EDE6",
+                    outline: "none",
+                    lineHeight: 1.6,
+                    transition: "border-color 0.2s, background 0.2s",
+                  }}
+                />
+              </div>
+
+              {/* CTA */}
+              <div style={{ marginTop: 28 }}>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="cta-btn"
+                  style={{
+                    width: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 8,
+                    background: "#FFD264",
+                    color: "#0C0C0B",
+                    border: "none",
+                    borderRadius: 10,
+                    padding: "16px 24px",
+                    fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                    fontSize: 15,
+                    fontWeight: 600,
+                    letterSpacing: "0.01em",
+                    cursor: submitting ? "default" : "pointer",
+                    opacity: submitting ? 0.7 : 1,
+                    transition:
+                      "opacity 0.15s, transform 0.12s, box-shadow 0.15s",
+                  }}
+                >
+                  {submitting ? "Setting up your digest…" : "Build my digest"}
+                  {!submitting && (
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 15 15"
+                      fill="none"
+                      aria-hidden
+                    >
+                      <path
+                        d="M2.5 7.5H12.5M8.5 3.5L12.5 7.5L8.5 11.5"
+                        stroke="#0C0C0B"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </button>
+                <p
+                  style={{
+                    marginTop: 12,
+                    textAlign: "center",
+                    fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                    fontSize: 12,
+                    color: "rgba(240,237,230,0.30)",
+                    letterSpacing: "0.02em",
+                  }}
+                >
+                  Free for 7 days · ₹299/month after · No card needed to start
+                </p>
+              </div>
             </form>
 
-            {/* Status messages */}
+            {/* Social proof */}
             <div
               style={{
-                marginTop: 14,
-                fontSize: 12,
-                fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-                color:
-                  submitState === "error"
-                    ? "rgba(255,120,100,0.7)"
-                    : submitState === "success"
-                    ? "rgba(255,210,100,0.6)"
-                    : "rgba(240,237,230,0.28)",
-                letterSpacing: "0.02em",
-                minHeight: 18,
-                animation: "fadeUp 0.8s cubic-bezier(0.22,1,0.36,1) 0.56s both",
+                marginTop: 36,
+                display: "flex",
+                alignItems: "center",
+                gap: 14,
+                animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.52s both",
               }}
             >
-              {submitState === "success" && "You are on the list. We will be in touch."}
-              {submitState === "duplicate" && "You are already on the list. We will be in touch."}
-              {submitState === "error" && "Something went wrong. Please try again."}
-              {(submitState === "idle" || submitState === "loading") &&
-                "No spam. Unsubscribe any time."}
+              <div style={{ display: "flex" }}>
+                {(
+                  [
+                    { bg: "#C084FC", l: "A" },
+                    { bg: "#34D399", l: "R" },
+                    { bg: "#60A5FA", l: "K" },
+                    { bg: "#FB923C", l: "S" },
+                  ] as const
+                ).map((av, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      width: 28,
+                      height: 28,
+                      borderRadius: "50%",
+                      background: av.bg,
+                      border: "2px solid #0C0C0B",
+                      marginLeft: i === 0 ? 0 : -8,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#fff",
+                      fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {av.l}
+                  </div>
+                ))}
+              </div>
+              <span
+                style={{
+                  fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 400,
+                  color: "rgba(240,237,230,0.44)",
+                  lineHeight: 1.4,
+                }}
+              >
+                <span style={{ color: "rgba(240,237,230,0.72)" }}>
+                  240+ readers
+                </span>{" "}
+                getting their daily digest
+              </span>
             </div>
+
           </div>
         </main>
-
-        {/* Stats bar */}
-        <footer
-          style={{
-            borderTop: "1px solid rgba(240,237,230,0.07)",
-            padding: "36px 40px",
-            animation: "fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.65s both",
-          }}
-        >
-          <div
-            style={{
-              maxWidth: 780,
-              margin: "0 auto",
-              display: "grid",
-              gridTemplateColumns: "repeat(3, 1fr)",
-              gap: "24px 16px",
-            }}
-          >
-            <StatItem
-              value={tickedStats.waitlistCount}
-              label="on the waitlist"
-              loading={stats === undefined}
-            />
-            <StatItem
-              value={tickedStats.minSavedPerDay}
-              suffix="+"
-              label="minutes saved daily"
-              loading={stats === undefined}
-            />
-            <StatItem
-              value={tickedStats.newslettersHandled}
-              suffix="+"
-              label="newsletters handled"
-              loading={stats === undefined}
-            />
-          </div>
-        </footer>
       </div>
 
       <style>{`
         @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(20px); }
+          from { opacity: 0; transform: translateY(16px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-
-        input::placeholder {
-          color: rgba(240,237,230,0.28);
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to   { opacity: 1; }
+        }
+        @keyframes shimmer {
+          0%   { background-position: -400px 0; }
+          100% { background-position:  400px 0; }
         }
 
-        @media (max-width: 540px) {
-          form { flex-direction: column; }
-          button[type="submit"] { width: 100%; text-align: center; }
+        .text-field::placeholder { color: rgba(240,237,230,0.22); }
+        .text-field:focus {
+          border-color: rgba(255,210,100,0.38) !important;
+          background: rgba(240,237,230,0.055) !important;
         }
 
-        @media (max-width: 480px) {
-          footer > div { grid-template-columns: 1fr 1fr; }
+        .pill:hover:not(.pill-on) {
+          border-color: rgba(255,210,100,0.28) !important;
+          background:   rgba(255,210,100,0.06) !important;
+          color:        rgba(240,237,230,0.85) !important;
+        }
+
+        .cta-btn:hover:not(:disabled) {
+          opacity: 0.90 !important;
+          transform: translateY(-1px);
+          box-shadow: 0 8px 30px rgba(255,210,100,0.22);
+        }
+        .cta-btn:active:not(:disabled) {
+          transform: translateY(0);
+          opacity: 1 !important;
+          box-shadow: none;
+        }
+
+        @media (max-width: 560px) {
+          nav  { padding: 22px 20px !important; }
+          main { padding: 32px 16px 64px !important; }
+          form { padding: 24px 20px 22px !important; border-radius: 16px !important; }
+          nav span:last-child { display: none; }
+          h1 { font-size: 46px !important; }
         }
       `}</style>
-    </div>
-  );
-}
-
-function StatItem({
-  value,
-  suffix = "",
-  label,
-  loading,
-}: {
-  value: number;
-  suffix?: string;
-  label: string;
-  loading: boolean;
-}) {
-  return (
-    <div>
-      <div
-        style={{
-          fontFamily: "var(--font-serif), 'Instrument Serif', serif",
-          fontSize: "clamp(30px, 4vw, 42px)",
-          fontWeight: 400,
-          color: "#F0EDE6",
-          letterSpacing: "-0.02em",
-          lineHeight: 1,
-          marginBottom: 8,
-        }}
-      >
-        {loading ? (
-          <span style={{ opacity: 0.2 }}>...</span>
-        ) : (
-          <CountingNumber value={value} suffix={suffix} />
-        )}
-      </div>
-      <div
-        style={{
-          fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-          fontSize: 12,
-          fontWeight: 400,
-          color: "rgba(240,237,230,0.38)",
-          letterSpacing: "0.04em",
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </div>
     </div>
   );
 }
