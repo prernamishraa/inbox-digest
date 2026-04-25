@@ -1,13 +1,21 @@
 import { NextResponse } from "next/server";
 
 interface RawSub {
+  visibility?: string;
   publication?: {
     name?: string;
     subdomain?: string;
     custom_domain?: string;
     author_name?: string;
+    author?: {
+      name?: string;
+    };
     subscriber_count?: number;
   };
+}
+
+interface PublicProfile {
+  subscriptions?: RawSub[];
 }
 
 export async function GET(
@@ -18,7 +26,7 @@ export async function GET(
 
   try {
     const res = await fetch(
-      `https://substack.com/api/v1/user/${encodeURIComponent(username)}/subscriptions`,
+      `https://substack.com/api/v1/user/${encodeURIComponent(username)}/public_profile`,
       {
         headers: {
           "User-Agent": "Mozilla/5.0 (compatible; InboxDigest/1.0)",
@@ -29,24 +37,25 @@ export async function GET(
 
     if (!res.ok) throw new Error(`Substack returned ${res.status}`);
 
-    const data = await res.json();
-
-    const raw: RawSub[] = Array.isArray(data)
-      ? data
-      : ((data as Record<string, unknown>).subscriptions as RawSub[]) ?? [];
+    const data = (await res.json()) as PublicProfile;
+    const raw: RawSub[] = data.subscriptions ?? [];
 
     const subscriptions = raw
       .filter((s) => s.publication?.name)
       .map((s) => ({
         newsletterName: s.publication!.name!,
-        authorName: s.publication!.author_name ?? "",
-        publicationUrl:
-          s.publication!.custom_domain ??
-          (s.publication!.subdomain
-            ? `https://${s.publication!.subdomain}.substack.com`
-            : ""),
+        authorName:
+          s.publication!.author?.name ??
+          s.publication!.author_name ??
+          "",
+        publicationUrl: s.publication!.custom_domain
+          ? `https://${s.publication!.custom_domain}`
+          : s.publication!.subdomain
+          ? `https://${s.publication!.subdomain}.substack.com`
+          : "",
         subscriberCount: s.publication!.subscriber_count,
-      }));
+      }))
+      .filter((s) => s.publicationUrl !== "");
 
     return NextResponse.json({ subscriptions });
   } catch {
