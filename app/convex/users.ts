@@ -1,5 +1,27 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+
+export const getUserByUsername = query({
+  args: { substackUsername: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_substackUsername", (q) =>
+        q.eq("substackUsername", args.substackUsername)
+      )
+      .unique();
+  },
+});
+
+export const getSubscriptions = query({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("subscriptions")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .take(200);
+  },
+});
 
 export const upsertUser = mutation({
   args: {
