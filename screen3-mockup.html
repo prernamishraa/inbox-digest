@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbox Digest — Your Daily Read</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --cream: #F5F0E8;
+    --cream-dark: #EDE7D8;
+    --cream-mid: #E8E1D0;
+    --amber: #FFD264;
+    --amber-dim: rgba(255, 210, 100, 0.18);
+    --green: #2D5016;
+    --green-light: rgba(45, 80, 22, 0.08);
+    --green-mid: rgba(45, 80, 22, 0.15);
+    --ink: #1A1714;
+    --ink-soft: #3D3830;
+    --ink-muted: rgba(26, 23, 20, 0.45);
+    --ink-faint: rgba(26, 23, 20, 0.12);
+    --rule: rgba(26, 23, 20, 0.10);
+    --serif: 'Instrument Serif', serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  /* ─── NOISE OVERLAY ─── */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.028;
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  /* ─── LAYOUT ─── */
+  .page-wrap {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ─── MASTHEAD ─── */
+  .masthead {
+    border-bottom: 1.5px solid var(--ink);
+    padding: 22px 0 18px;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .masthead-brand {
+    font-family: var(--serif);
+    font-size: 17px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+
+  .masthead-brand span { color: var(--amber); filter: brightness(0.82); }
+
+  .masthead-date {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  /* ─── HERO HEADER ─── */
+  .digest-header {
+    padding: 52px 0 44px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .digest-eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.11em;
+    color: var(--green);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .digest-eyebrow::after {
+    content: '';
+    display: block;
+    height: 1px;
+    width: 32px;
+    background: var(--green);
+    opacity: 0.5;
+  }
+
+  .digest-title {
+    font-family: var(--serif);
+    font-size: clamp(40px, 6vw, 68px);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .digest-title em {
+    font-style: italic;
+    color: var(--green);
+  }
+
+  .digest-subtitle {
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    margin-top: 16px;
+    letter-spacing: 0.01em;
+  }
+
+  /* ─── STATS ROW ─── */
+  .stats-row {
+    display: flex;
+    gap: 0;
+    margin-top: 40px;
+    border: 1px solid var(--ink-faint);
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--cream-dark);
+  }
+
+  .stat-cell {
+    flex: 1;
+    padding: 18px 24px;
+    border-right: 1px solid var(--ink-faint);
+    position: relative;
+  }
+
+  .stat-cell:last-child { border-right: none; }
+
+  .stat-number {
+    font-family: var(--serif);
+    font-size: 36px;
+    line-height: 1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 4px;
+  }
+
+  .stat-number em { font-style: italic; color: var(--green); }
+
+  .stat-label {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  /* ─── SECTIONS ─── */
+  .section {
+    padding: 56px 0 0;
+    opacity: 0;
+    transform: translateY(18px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.15s; }
+  .section:nth-child(3) { animation-delay: 0.25s; }
+  .section:nth-child(4) { animation-delay: 0.35s; }
+  .section:nth-child(5) { animation-delay: 0.45s; }
+
+  .section-header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1.5px solid var(--ink);
+    margin-bottom: 28px;
+  }
+
+  .section-label-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .section-number {
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    color: var(--ink-muted);
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: clamp(26px, 3.5vw, 38px);
+    font-weight: 400;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+
+  .section-title em { font-style: italic; }
+  .section-title .amber { color: var(--amber); filter: brightness(0.78); }
+  .section-title .green { color: var(--green); }
+
+  .section-count {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+  }
+
+  /* ─── CARD GRID ─── */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 56px;
+  }
+
+  .card-grid.single {
+    grid-template-columns: 1fr;
+  }
+
+  .card-grid.three {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  /* ─── POST CARD ─── */
+  .card {
+    background: var(--cream);
+    padding: 28px 30px 30px;
+    position: relative;
+    transition: background 0.2s ease;
+    cursor: default;
+  }
+
+  .card:hover {
+    background: #F0EAD8;
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .card-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--green);
+    color: #fff;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 3px 9px 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .card-read-time {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    white-space: nowrap;
+  }
+
+  .card-title {
+    font-family: var(--serif);
+    font-size: 21px;
+    font-weight: 400;
+    line-height: 1.2;
+    letter-spacing: -0.018em;
+    color: var(--ink);
+    margin-bottom: 6px;
+  }
+
+  .card-title em { font-style: italic; }
+
+  .card-author {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+    margin-bottom: 16px;
+  }
+
+  /* Summary */
+  .card-summary {
+    font-family: var(--sans);
+    font-size: 13.5px;
+    font-weight: 400;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    margin-bottom: 16px;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Insight */
+  .card-insight {
+    background: var(--green-light);
+    border-left: 2.5px solid var(--green);
+    padding: 10px 13px;
+    margin-bottom: 14px;
+    border-radius: 0 2px 2px 0;
+  }
+
+  .card-insight-label {
+    font-family: var(--sans);
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--green);
+    margin-bottom: 4px;
+  }
+
+  .card-insight-text {
+    font-family: var(--sans);
+    font-size: 12.5px;
+    font-weight: 400;
+    line-height: 1.55;
+    color: var(--ink-soft);
+  }
+
+  /* Reason */
+  .card-reason {
+    display: flex;
+    align-items: flex-start;
+    gap: 7px;
+  }
+
+  .card-reason-icon {
+    width: 14px;
+    height: 14px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    color: var(--amber);
+    filter: brightness(0.82);
+  }
+
+  .card-reason-text {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.5;
+    color: var(--ink-muted);
+    font-style: italic;
+  }
+
+  /* ─── FEATURED CARD (full width) ─── */
+  .card-featured {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    background: var(--cream);
+    padding: 0;
+  }
+
+  .card-featured:hover { background: #F0EAD8; }
+
+  .card-featured-main {
+    padding: 32px 34px;
+    border-right: 1px solid var(--rule);
+  }
+
+  .card-featured-aside {
+    padding: 32px 34px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .card-featured .card-title {
+    font-size: 27px;
+    margin-bottom: 10px;
+  }
+
+  /* ─── DISCOVERY CARD ─── */
+  .card-discovery {
+    background: var(--cream-dark);
+    border: none;
+  }
+
+  .card-discovery:hover { background: var(--cream-mid); }
+
+  .card-discovery .card-title {
+    font-size: 19px;
+  }
+
+  .follow-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 18px;
+    padding: 8px 16px;
+    border: 1.5px solid var(--green);
+    border-radius: 2px;
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--green);
+    cursor: pointer;
+    transition: all 0.18s ease;
+  }
+
+  .follow-btn:hover {
+    background: var(--green);
+    color: #fff;
+  }
+
+  /* ─── FOOTER ─── */
+  .page-footer {
+    border-top: 1.5px solid var(--ink);
+    margin-top: 0;
+    padding: 32px 0 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .footer-brand {
+    font-family: var(--serif);
+    font-size: 15px;
+    color: var(--ink);
+  }
+  .footer-brand span { color: var(--amber); filter: brightness(0.82); }
+
+  .footer-note {
+    font-family: var(--sans);
+    font-size: 12px;
+    color: var(--ink-muted);
+    font-weight: 400;
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 20px;
+  }
+
+  .footer-links a {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    text-decoration: none;
+    letter-spacing: 0.02em;
+    transition: color 0.15s;
+  }
+
+  .footer-links a:hover { color: var(--ink); }
+
+  /* ─── AMBER ACCENT BAR ─── */
+  .accent-bar {
+    height: 3px;
+    background: var(--amber);
+    width: 100%;
+  }
+
+  /* ─── ANIMATIONS ─── */
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .digest-header {
+    opacity: 0;
+    animation: fadeUp 0.6s ease 0.02s forwards;
+  }
+
+  .stats-row {
+    opacity: 0;
+    animation: fadeUp 0.5s ease 0.12s forwards;
+  }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 720px) {
+    .page-wrap { padding: 0 18px; }
+    .card-grid { grid-template-columns: 1fr; }
+    .card-grid.three { grid-template-columns: 1fr; }
+    .card-featured { grid-template-columns: 1fr; }
+    .card-featured-main { border-right: none; border-bottom: 1px solid var(--rule); }
+    .stats-row { flex-direction: column; }
+    .stat-cell { border-right: none; border-bottom: 1px solid var(--ink-faint); }
+    .stat-cell:last-child { border-bottom: none; }
+    .digest-title { font-size: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="accent-bar"></div>
+
+<div class="page-wrap">
+
+  <!-- MASTHEAD -->
+  <header class="masthead">
+    <div class="masthead-brand">Inbox<span>Digest</span></div>
+    <div class="masthead-date">Friday, 25 April 2026 &nbsp;·&nbsp; @johndoe</div>
+  </header>
+
+  <!-- DIGEST HEADER -->
+  <div class="digest-header">
+    <div class="digest-eyebrow">Your personal digest</div>
+    <h1 class="digest-title">
+      The best of your<br>
+      inbox, <em>curated</em> for you.
+    </h1>
+    <p class="digest-subtitle">Pulled from 23 newsletters you follow — we found the pieces worth your time.</p>
+
+    <!-- STATS ROW -->
+    <div class="stats-row">
+      <div class="stat-cell">
+        <div class="stat-number">23</div>
+        <div class="stat-label">Newsletters tracked</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-number">47</div>
+        <div class="stat-label">Posts fetched</div>
+      </div>
+      <div class="stat-cell">
+        <div class="stat-number"><em>3.2</em> hrs</div>
+        <div class="stat-label">Reading time saved</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── SECTION 1: MISSED THIS WEEK ─── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-label-wrap">
+        <span class="section-number">01 &nbsp;/&nbsp; 05</span>
+        <h2 class="section-title">Missed <em>this week</em></h2>
+      </div>
+      <span class="section-count">2 posts</span>
+    </div>
+
+    <div class="card-grid">
+      <!-- Card 1 -->
+      <div class="card">
+        <div class="card-top">
+          <span class="card-tag">Technology</span>
+          <span class="card-read-time">8 min read</span>
+        </div>
+        <h3 class="card-title">The Attention Economy Is <em>Eating Your Brain</em></h3>
+        <p class="card-author">Tim Urban &nbsp;·&nbsp; Wait But Why</p>
+        <p class="card-summary">Tim Urban returns with a typically sprawling but incisive look at how social media platforms are not simply addictive — they're architecturally designed to fragment your capacity for deep thought. Drawing on cognitive neuroscience, he maps out exactly what happens when your brain switches contexts 200+ times a day.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">Every interruption costs you 23 minutes of focused recovery time. You're not distracted — you're being professionally distracted.</div>
+        </div>
+        <div class="card-reason">
+          <svg class="card-reason-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5C5 2.5 2.5 5 2.5 8S5 13.5 8 13.5 13.5 11 13.5 8 11 2.5 8 2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="card-reason-text">You follow Wait But Why — Tim's last deep-dive on focus had over 4M reads. This one's already trending.</span>
+        </div>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="card">
+        <div class="card-top">
+          <span class="card-tag">Culture</span>
+          <span class="card-read-time">6 min read</span>
+        </div>
+        <h3 class="card-title">Why Remote Work <em>Isn't Going Anywhere</em></h3>
+        <p class="card-author">Anne Helen Petersen &nbsp;·&nbsp; Culture Study</p>
+        <p class="card-summary">Three years after the RTO mandates started rolling in, the data tells a surprising story. AHP digs into the gap between what executives say they want and what workers are actually doing — and why hybrid arrangements have quietly become the dominant mode of professional life for knowledge workers.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">The companies loudest about RTO have seen the highest voluntary attrition. The market is speaking — and workers are listening.</div>
+        </div>
+        <div class="card-reason">
+          <svg class="card-reason-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5C5 2.5 2.5 5 2.5 8S5 13.5 8 13.5 13.5 11 13.5 8 11 2.5 8 2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="card-reason-text">You selected "Culture" as a reading preference — this is Culture Study's most-shared piece in six months.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 2: YOUR TOP CREATOR POSTED ─── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-label-wrap">
+        <span class="section-number">02 &nbsp;/&nbsp; 05</span>
+        <h2 class="section-title">Your <em>top creator</em> posted</h2>
+      </div>
+      <span class="section-count">Morning Brew &nbsp;·&nbsp; 4.1M subscribers</span>
+    </div>
+
+    <div class="card-grid single">
+      <!-- Featured card -->
+      <div class="card card-featured">
+        <div class="card-featured-main">
+          <div class="card-top">
+            <span class="card-tag">Finance</span>
+            <span class="card-read-time">11 min read</span>
+          </div>
+          <h3 class="card-title">The Fed Just Blinked: <em>What It Means for Your Money</em></h3>
+          <p class="card-author">Alex Lieberman &nbsp;·&nbsp; Morning Brew</p>
+          <p class="card-summary">The Federal Reserve's surprise pivot on interest rates this week sent markets into a frenzy. Alex breaks down what actually happened in the FOMC meeting, why the language shift matters more than the numbers, and what ordinary investors should actually do with this information. No jargon, no panic — just clear thinking.</p>
+        </div>
+        <div class="card-featured-aside">
+          <div>
+            <div class="card-insight">
+              <div class="card-insight-label">Core insight</div>
+              <div class="card-insight-text">The Fed's pivot isn't about inflation being solved — it's about avoiding a recession in an election year. These are different things, and the distinction matters for your portfolio.</div>
+            </div>
+            <div class="card-reason">
+              <svg class="card-reason-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5C5 2.5 2.5 5 2.5 8S5 13.5 8 13.5 13.5 11 13.5 8 11 2.5 8 2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+              <span class="card-reason-text">Morning Brew is your most-read newsletter. Alex doesn't post often — this is worth your attention.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 3: BECAUSE YOU LIKE ─── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-label-wrap">
+        <span class="section-number">03 &nbsp;/&nbsp; 05</span>
+        <h2 class="section-title">Because you like <span class="green"><em>Tech & Startups</em></span></h2>
+      </div>
+      <span class="section-count">2 posts</span>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-top">
+          <span class="card-tag">Technology</span>
+          <span class="card-read-time">9 min read</span>
+        </div>
+        <h3 class="card-title">Claude vs GPT-4o: The <em>Differences That Actually Matter</em></h3>
+        <p class="card-author">Ben Thompson &nbsp;·&nbsp; Stratechery</p>
+        <p class="card-summary">Thompson cuts through the benchmark noise to explain why comparing AI models on leaderboards misses the point entirely. His analysis focuses on use-case fit, pricing structure, and the emerging question of which model you'd trust with your actual workflow — not which one scores higher on obscure reasoning tests.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">The real differentiation isn't capability — it's trust. Which model do you let see your email? That's the question that determines the winner.</div>
+        </div>
+        <div class="card-reason">
+          <svg class="card-reason-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5C5 2.5 2.5 5 2.5 8S5 13.5 8 13.5 13.5 11 13.5 8 11 2.5 8 2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="card-reason-text">You marked Technology as a top interest. Stratechery is one of your followed publications.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="card-tag">Media</span>
+          <span class="card-read-time">7 min read</span>
+        </div>
+        <h3 class="card-title">The <em>Slow Death</em> of the Open Web</h3>
+        <p class="card-author">Charlie Warzel &nbsp;·&nbsp; Galaxy Brained</p>
+        <p class="card-summary">Warzel documents the quiet, unglamorous collapse of the internet as we knew it — not through drama or scandal, but through a thousand small decisions by platforms to prioritise engagement over openness. The result is a web that looks similar but functions entirely differently from the one that existed a decade ago.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">Substack, ironically, is one of the last places where a link means something — where someone chose to show up rather than scroll past.</div>
+        </div>
+        <div class="card-reason">
+          <svg class="card-reason-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5C5 2.5 2.5 5 2.5 8S5 13.5 8 13.5 13.5 11 13.5 8 11 2.5 8 2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="card-reason-text">You told us you're interested in how media is changing. This one's a sharp read on exactly that.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 4: TRENDING ─── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-label-wrap">
+        <span class="section-number">04 &nbsp;/&nbsp; 05</span>
+        <h2 class="section-title">Trending <em>this week</em></h2>
+      </div>
+      <span class="section-count">2 posts</span>
+    </div>
+
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-top">
+          <span class="card-tag">Health</span>
+          <span class="card-read-time">10 min read</span>
+        </div>
+        <h3 class="card-title">The Ozempic Effect on <em>American Restaurants</em></h3>
+        <p class="card-author">Tejal Rao &nbsp;·&nbsp; The Counter</p>
+        <p class="card-summary">A fascinating, data-driven look at how GLP-1 drugs are changing portion sizes, menu engineering, and restaurant revenues across the US. This is neither a celebration nor a condemnation — just a clear-eyed look at a genuine transformation in eating culture that restaurants are quietly scrambling to respond to.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">Fast casual chains are down 8% on average order value since 2024. Nobody is saying the word Ozempic — but every CFO knows.</div>
+        </div>
+        <div class="card-reason">
+          <svg class="card-reason-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5C5 2.5 2.5 5 2.5 8S5 13.5 8 13.5 13.5 11 13.5 8 11 2.5 8 2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="card-reason-text">This piece has been shared 14,000 times in 4 days. It's everywhere — might as well read the original.</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-top">
+          <span class="card-tag">Business</span>
+          <span class="card-read-time">12 min read</span>
+        </div>
+        <h3 class="card-title">India's Startup Boom Is <em>Different This Time</em></h3>
+        <p class="card-author">Nikhil Kamath &nbsp;·&nbsp; The Nikhil Kamath Letter</p>
+        <p class="card-summary">A nuanced take on why the current wave of Indian startups — especially in fintech, SaaS, and space tech — looks fundamentally different from the 2015-2021 boom. Kamath argues that profitability-first culture, a maturing VC ecosystem, and genuine domestic demand have created a foundation that the previous cycle never had.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">The companies getting funded now actually have revenue. That sounds obvious. It wasn't, before.</div>
+        </div>
+        <div class="card-reason">
+          <svg class="card-reason-icon" viewBox="0 0 16 16" fill="none"><path d="M8 2.5C5 2.5 2.5 5 2.5 8S5 13.5 8 13.5 13.5 11 13.5 8 11 2.5 8 2.5z" stroke="currentColor" stroke-width="1.2"/><path d="M8 7v4M8 5.5v.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          <span class="card-reason-text">Trending across your reading network this week. 22 people you follow have shared this piece.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SECTION 5: YOU MIGHT ALSO LIKE ─── -->
+  <section class="section">
+    <div class="section-header">
+      <div class="section-label-wrap">
+        <span class="section-number">05 &nbsp;/&nbsp; 05</span>
+        <h2 class="section-title">You might <em>also like</em></h2>
+      </div>
+      <span class="section-count">Discovery</span>
+    </div>
+
+    <div class="card-grid three">
+      <div class="card card-discovery">
+        <div class="card-top">
+          <span class="card-tag">Philosophy</span>
+          <span class="card-read-time">5 min read</span>
+        </div>
+        <h3 class="card-title">On <em>Noticing</em> Things</h3>
+        <p class="card-author">Maria Popova &nbsp;·&nbsp; The Marginalian</p>
+        <p class="card-summary">A meditation on how slowing down our visual attention changes what we're capable of thinking. Popova weaves together Walter Benjamin, Annie Dillard, and modern neuroscience into something unexpectedly moving.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">Noticing is not passive. It is a practice — and like any practice, it can be cultivated.</div>
+        </div>
+        <button class="follow-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Follow The Marginalian
+        </button>
+      </div>
+
+      <div class="card card-discovery">
+        <div class="card-top">
+          <span class="card-tag">Profiles</span>
+          <span class="card-read-time">14 min read</span>
+        </div>
+        <h3 class="card-title">The Woman Who <em>Sees Around Corners</em></h3>
+        <p class="card-author">Polina Marinova &nbsp;·&nbsp; The Profile</p>
+        <p class="card-summary">An in-depth profile of a founder who has quietly built one of the most influential AI safety organisations in the world while remaining almost completely unknown to the public. A masterclass in operating with conviction against a hostile mainstream.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">The most important work in tech right now is being done by people you've never heard of. Polina finds them.</div>
+        </div>
+        <button class="follow-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Follow The Profile
+        </button>
+      </div>
+
+      <div class="card card-discovery">
+        <div class="card-top">
+          <span class="card-tag">Science</span>
+          <span class="card-read-time">7 min read</span>
+        </div>
+        <h3 class="card-title">What <em>Octopuses</em> Can Teach Us About Intelligence</h3>
+        <p class="card-author">Ed Yong &nbsp;·&nbsp; Ed Yong's Newsletter</p>
+        <p class="card-summary">A delightful and genuinely mind-expanding piece on cephalopod cognition. Ed Yong, fresh off his Pulitzer, is writing some of the most elegant science journalism anywhere. This one will make you reconsider what "thinking" even means.</p>
+        <div class="card-insight">
+          <div class="card-insight-label">Core insight</div>
+          <div class="card-insight-text">Two-thirds of an octopus's neurons are in its arms. Intelligence, it turns out, doesn't need a central address.</div>
+        </div>
+        <button class="follow-btn">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Follow Ed Yong
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="page-footer">
+    <div class="footer-brand">Inbox<span>Digest</span></div>
+    <div class="footer-note">Generated for @johndoe &nbsp;·&nbsp; 25 April 2026</div>
+    <div class="footer-links">
+      <a href="#">Adjust preferences</a>
+      <a href="#">Email this digest</a>
+      <a href="#">Unsubscribe</a>
+    </div>
+  </footer>
+
+</div><!-- /page-wrap -->
+
+</body>
+</html>
