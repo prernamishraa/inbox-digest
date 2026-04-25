@@ -147,7 +147,7 @@ export function LoadingContent() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#0C0C0B",
+        background: "#F5F0E8",
         position: "relative",
         overflow: "hidden",
         display: "flex",
@@ -162,34 +162,22 @@ export function LoadingContent() {
           inset: 0,
           backgroundImage: NOISE_SVG,
           backgroundSize: "180px 180px",
-          opacity: 0.03,
+          opacity: 0.025,
           pointerEvents: "none",
           zIndex: 0,
         }}
       />
 
-      {/* Amber glow */}
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          top: -140,
-          right: -140,
-          width: 680,
-          height: 680,
-          background:
-            "radial-gradient(circle at center, rgba(255,210,80,0.13) 0%, rgba(255,185,60,0.05) 44%, transparent 70%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
+      {/* Amber accent bar */}
+      <div style={{ height: 3, background: "#FFD264", position: "relative", zIndex: 2 }} />
 
       {/* Nav */}
       <nav
         style={{
           position: "relative",
           zIndex: 1,
-          padding: "28px 40px",
+          borderBottom: "1px solid rgba(26,23,20,0.10)",
+          padding: "22px 40px",
           display: "flex",
           alignItems: "center",
         }}
@@ -197,12 +185,12 @@ export function LoadingContent() {
         <span
           style={{
             fontFamily: "var(--font-serif), 'Instrument Serif', serif",
-            fontSize: 18,
-            color: "#F0EDE6",
+            fontSize: 17,
+            color: "#1A1714",
             letterSpacing: "-0.01em",
           }}
         >
-          Inbox<span style={{ color: "#FFD264" }}>Digest</span>
+          Inbox<span style={{ color: "#C9981A" }}>Digest</span>
         </span>
       </nav>
 
@@ -236,7 +224,7 @@ export function LoadingContent() {
               fontWeight: 400,
               lineHeight: 1.2,
               letterSpacing: "-0.02em",
-              color: "#F0EDE6",
+              color: "#1A1714",
               marginBottom: sub ? 12 : 0,
             }}
           >
@@ -252,7 +240,7 @@ export function LoadingContent() {
                 fontStyle: "italic",
                 lineHeight: 1.2,
                 letterSpacing: "-0.02em",
-                color: "#FFD264",
+                color: "#2D5016",
               }}
             >
               {sub}
@@ -268,8 +256,8 @@ export function LoadingContent() {
                 width: 36,
                 height: 36,
                 borderRadius: "50%",
-                background: "rgba(255,210,100,0.15)",
-                border: "1.5px solid rgba(255,210,100,0.5)",
+                background: "rgba(45,80,22,0.08)",
+                border: "1.5px solid rgba(45,80,22,0.32)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -279,7 +267,7 @@ export function LoadingContent() {
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
                 <path
                   d="M3 8L6.5 11.5L13 5"
-                  stroke="#FFD264"
+                  stroke="#2D5016"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -292,8 +280,8 @@ export function LoadingContent() {
                 width: 28,
                 height: 28,
                 borderRadius: "50%",
-                border: "2px solid rgba(255,210,100,0.15)",
-                borderTopColor: "rgba(255,210,100,0.65)",
+                border: "2px solid rgba(45,80,22,0.12)",
+                borderTopColor: "rgba(45,80,22,0.60)",
                 animation: "spin 0.9s linear infinite",
               }}
             />
@@ -310,7 +298,7 @@ export function LoadingContent() {
               fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
               fontSize: 13,
               fontWeight: 400,
-              color: "rgba(240,237,230,0.32)",
+              color: "rgba(26,23,20,0.42)",
               letterSpacing: "0.02em",
               animation: "fadeUp 0.5s ease both",
             }}

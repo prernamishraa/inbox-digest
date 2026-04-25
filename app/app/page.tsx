@@ -83,7 +83,7 @@ export default function Home() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#0C0C0B",
+        background: "#F5F0E8",
         position: "relative",
         overflow: "hidden",
       }}
@@ -96,49 +96,20 @@ export default function Home() {
           inset: 0,
           backgroundImage: NOISE_SVG,
           backgroundSize: "180px 180px",
-          opacity: 0.03,
+          opacity: 0.025,
           pointerEvents: "none",
           zIndex: 0,
         }}
       />
 
-      {/* Amber glow — top right */}
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          top: -140,
-          right: -140,
-          width: 680,
-          height: 680,
-          background:
-            "radial-gradient(circle at center, rgba(255,210,80,0.13) 0%, rgba(255,185,60,0.05) 44%, transparent 70%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
-
-      {/* Faint glow — bottom left */}
-      <div
-        aria-hidden
-        style={{
-          position: "fixed",
-          bottom: -180,
-          left: -80,
-          width: 480,
-          height: 480,
-          background:
-            "radial-gradient(circle at center, rgba(255,210,80,0.04) 0%, transparent 65%)",
-          pointerEvents: "none",
-          zIndex: 0,
-        }}
-      />
+      {/* Amber accent bar */}
+      <div style={{ height: 3, background: "#FFD264", position: "relative", zIndex: 2 }} />
 
       <div
         style={{
           position: "relative",
           zIndex: 1,
-          minHeight: "100vh",
+          minHeight: "calc(100vh - 3px)",
           display: "flex",
           flexDirection: "column",
         }}
@@ -146,7 +117,8 @@ export default function Home() {
         {/* Nav */}
         <nav
           style={{
-            padding: "28px 40px",
+            borderBottom: "1px solid rgba(26,23,20,0.10)",
+            padding: "22px 40px",
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
@@ -155,12 +127,12 @@ export default function Home() {
           <span
             style={{
               fontFamily: "var(--font-serif), 'Instrument Serif', serif",
-              fontSize: 18,
-              color: "#F0EDE6",
+              fontSize: 17,
+              color: "#1A1714",
               letterSpacing: "-0.01em",
             }}
           >
-            Inbox<span style={{ color: "#FFD264" }}>Digest</span>
+            Inbox<span style={{ color: "#C9981A" }}>Digest</span>
           </span>
           <span
             style={{
@@ -168,7 +140,7 @@ export default function Home() {
               fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
               fontWeight: 400,
               letterSpacing: "0.02em",
-              color: "rgba(240,237,230,0.36)",
+              color: "rgba(26,23,20,0.45)",
             }}
           >
             7-day free trial · ₹299/mo after
@@ -181,7 +153,7 @@ export default function Home() {
             flex: 1,
             display: "flex",
             justifyContent: "center",
-            padding: "44px 24px 80px",
+            padding: "48px 24px 80px",
           }}
         >
           <div style={{ width: "100%", maxWidth: 660 }}>
@@ -191,17 +163,17 @@ export default function Home() {
               style={{
                 display: "inline-flex",
                 alignItems: "center",
-                gap: 10,
-                marginBottom: 28,
+                gap: 8,
+                marginBottom: 26,
                 animation: "fadeUp 0.6s cubic-bezier(0.22,1,0.36,1) 0.05s both",
               }}
             >
               <span
                 style={{
                   display: "block",
-                  width: 20,
+                  width: 22,
                   height: 1,
-                  background: "#FFD264",
+                  background: "#2D5016",
                   opacity: 0.55,
                   flexShrink: 0,
                 }}
@@ -211,9 +183,9 @@ export default function Home() {
                   fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                   fontSize: 11,
                   fontWeight: 500,
-                  letterSpacing: "0.12em",
-                  color: "#FFD264",
-                  opacity: 0.85,
+                  letterSpacing: "0.11em",
+                  textTransform: "uppercase" as const,
+                  color: "#2D5016",
                 }}
               >
                 For Substack readers
@@ -228,14 +200,14 @@ export default function Home() {
                 fontWeight: 400,
                 lineHeight: 1.05,
                 letterSpacing: "-0.025em",
-                color: "#F0EDE6",
-                marginBottom: 20,
+                color: "#1A1714",
+                marginBottom: 18,
                 animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.14s both",
               }}
             >
               Stop missing<br />
               the{" "}
-              <em style={{ fontStyle: "italic", color: "#FFD264" }}>best</em>
+              <em style={{ fontStyle: "italic", color: "#2D5016" }}>best</em>
               {" "}of<br />
               Substack
             </h1>
@@ -247,9 +219,9 @@ export default function Home() {
                 fontSize: "clamp(15px, 2vw, 17px)",
                 fontWeight: 400,
                 lineHeight: 1.72,
-                color: "rgba(240,237,230,0.52)",
+                color: "rgba(26,23,20,0.50)",
                 maxWidth: 480,
-                marginBottom: 44,
+                marginBottom: 40,
                 animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.25s both",
               }}
             >
@@ -262,10 +234,11 @@ export default function Home() {
               onSubmit={handleSubmit}
               style={{
                 width: "100%",
-                background: "rgba(240,237,230,0.02)",
-                border: "1px solid rgba(240,237,230,0.08)",
-                borderRadius: 20,
-                padding: "36px 36px 30px",
+                background: "#FFFFFF",
+                border: "1px solid rgba(26,23,20,0.10)",
+                borderRadius: 16,
+                padding: "32px 32px 28px",
+                boxShadow: "0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04)",
                 animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.36s both",
               }}
             >
@@ -278,8 +251,8 @@ export default function Home() {
                   fontSize: 11,
                   fontWeight: 500,
                   letterSpacing: "0.08em",
-                  color: "rgba(240,237,230,0.42)",
-                  marginBottom: 10,
+                  color: "rgba(26,23,20,0.45)",
+                  marginBottom: 9,
                 }}
               >
                 Your Substack profile URL
@@ -296,13 +269,13 @@ export default function Home() {
                 className="text-field"
                 style={{
                   width: "100%",
-                  background: "rgba(240,237,230,0.04)",
-                  border: `1px solid ${urlError ? "rgba(255,100,80,0.50)" : "rgba(240,237,230,0.10)"}`,
-                  borderRadius: 10,
-                  padding: "13px 16px",
+                  background: "#F5F0E8",
+                  border: `1px solid ${urlError ? "rgba(200,60,40,0.45)" : "rgba(26,23,20,0.13)"}`,
+                  borderRadius: 8,
+                  padding: "12px 15px",
                   fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-                  fontSize: 15,
-                  color: "#F0EDE6",
+                  fontSize: 14,
+                  color: "#1A1714",
                   outline: "none",
                   transition: "border-color 0.2s, background 0.2s",
                 }}
@@ -313,7 +286,7 @@ export default function Home() {
                     marginTop: 8,
                     fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                     fontSize: 12,
-                    color: "rgba(255,100,80,0.80)",
+                    color: "rgba(200,60,40,0.85)",
                     letterSpacing: "0.01em",
                   }}
                 >
@@ -328,15 +301,15 @@ export default function Home() {
                   fontSize: 11,
                   fontWeight: 500,
                   letterSpacing: "0.08em",
-                  color: "rgba(240,237,230,0.42)",
-                  margin: "28px 0 12px",
+                  color: "rgba(26,23,20,0.45)",
+                  margin: "26px 0 11px",
                 }}
               >
                 What do you read? Pick a few
               </div>
 
               {/* Pills */}
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 7 }}>
                 {catState === "loading"
                   ? SKELETON_WIDTHS.map((w, i) => (
                       <div
@@ -346,7 +319,7 @@ export default function Home() {
                           height: 32,
                           borderRadius: 100,
                           background:
-                            "linear-gradient(90deg, rgba(240,237,230,0.05) 0%, rgba(240,237,230,0.09) 50%, rgba(240,237,230,0.05) 100%)",
+                            "linear-gradient(90deg, rgba(26,23,20,0.05) 0%, rgba(26,23,20,0.09) 50%, rgba(26,23,20,0.05) 100%)",
                           backgroundSize: "400px 100%",
                           animation: `shimmer 1.5s ease-in-out infinite`,
                           animationDelay: `${i * 0.05}s`,
@@ -364,16 +337,16 @@ export default function Home() {
                           style={{
                             display: "inline-flex",
                             alignItems: "center",
-                            padding: "6px 14px",
+                            padding: "6px 13px",
                             borderRadius: 100,
-                            border: `1px solid ${on ? "#FFD264" : "rgba(240,237,230,0.10)"}`,
+                            border: `1px solid ${on ? "#2D5016" : "rgba(26,23,20,0.12)"}`,
                             background: on
-                              ? "rgba(255,210,100,0.11)"
-                              : "rgba(240,237,230,0.04)",
-                            color: on ? "#FFD264" : "rgba(240,237,230,0.58)",
-                            fontSize: 13,
+                              ? "rgba(45,80,22,0.08)"
+                              : "transparent",
+                            color: on ? "#2D5016" : "rgba(26,23,20,0.52)",
+                            fontSize: 12.5,
                             fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-                            fontWeight: 400,
+                            fontWeight: on ? 500 : 400,
                             lineHeight: 1,
                             cursor: "pointer",
                             transition:
@@ -388,13 +361,13 @@ export default function Home() {
               </div>
 
               {/* Optional about */}
-              <div style={{ marginTop: 28 }}>
+              <div style={{ marginTop: 26 }}>
                 <div
                   style={{
                     display: "flex",
                     alignItems: "center",
                     gap: 8,
-                    marginBottom: 10,
+                    marginBottom: 9,
                   }}
                 >
                   <span
@@ -403,7 +376,7 @@ export default function Home() {
                       fontSize: 11,
                       fontWeight: 500,
                       letterSpacing: "0.08em",
-                      color: "rgba(240,237,230,0.42)",
+                      color: "rgba(26,23,20,0.45)",
                     }}
                   >
                     Anything specific you love?
@@ -414,9 +387,10 @@ export default function Home() {
                       fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                       fontWeight: 400,
                       letterSpacing: "0.04em",
-                      color: "rgba(240,237,230,0.28)",
-                      background: "rgba(240,237,230,0.06)",
-                      borderRadius: 4,
+                      color: "rgba(26,23,20,0.40)",
+                      background: "#F5F0E8",
+                      border: "1px solid rgba(26,23,20,0.10)",
+                      borderRadius: 3,
                       padding: "2px 7px",
                     }}
                   >
@@ -432,13 +406,13 @@ export default function Home() {
                   style={{
                     width: "100%",
                     resize: "none",
-                    background: "rgba(240,237,230,0.04)",
-                    border: "1px solid rgba(240,237,230,0.10)",
-                    borderRadius: 10,
-                    padding: "13px 16px",
+                    background: "#F5F0E8",
+                    border: "1px solid rgba(26,23,20,0.13)",
+                    borderRadius: 8,
+                    padding: "12px 15px",
                     fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-                    fontSize: 14,
-                    color: "#F0EDE6",
+                    fontSize: 13.5,
+                    color: "#1A1714",
                     outline: "none",
                     lineHeight: 1.6,
                     transition: "border-color 0.2s, background 0.2s",
@@ -447,7 +421,7 @@ export default function Home() {
               </div>
 
               {/* CTA */}
-              <div style={{ marginTop: 28 }}>
+              <div style={{ marginTop: 24 }}>
                 <button
                   type="submit"
                   disabled={submitting}
@@ -458,11 +432,11 @@ export default function Home() {
                     alignItems: "center",
                     justifyContent: "center",
                     gap: 8,
-                    background: "#FFD264",
-                    color: "#0C0C0B",
+                    background: "#2D5016",
+                    color: "#FFFFFF",
                     border: "none",
-                    borderRadius: 10,
-                    padding: "16px 24px",
+                    borderRadius: 9,
+                    padding: "15px 24px",
                     fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                     fontSize: 15,
                     fontWeight: 600,
@@ -484,7 +458,7 @@ export default function Home() {
                     >
                       <path
                         d="M2.5 7.5H12.5M8.5 3.5L12.5 7.5L8.5 11.5"
-                        stroke="#0C0C0B"
+                        stroke="#FFFFFF"
                         strokeWidth="1.6"
                         strokeLinecap="round"
                         strokeLinejoin="round"
@@ -494,11 +468,11 @@ export default function Home() {
                 </button>
                 <p
                   style={{
-                    marginTop: 12,
+                    marginTop: 11,
                     textAlign: "center",
                     fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                     fontSize: 12,
-                    color: "rgba(240,237,230,0.30)",
+                    color: "rgba(26,23,20,0.40)",
                     letterSpacing: "0.02em",
                   }}
                 >
@@ -510,20 +484,20 @@ export default function Home() {
             {/* Social proof */}
             <div
               style={{
-                marginTop: 36,
+                marginTop: 32,
                 display: "flex",
                 alignItems: "center",
-                gap: 14,
+                gap: 13,
                 animation: "fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) 0.52s both",
               }}
             >
               <div style={{ display: "flex" }}>
                 {(
                   [
-                    { bg: "#C084FC", l: "A" },
-                    { bg: "#34D399", l: "R" },
-                    { bg: "#60A5FA", l: "K" },
-                    { bg: "#FB923C", l: "S" },
+                    { bg: "#7C6EAF", l: "A" },
+                    { bg: "#3A8C6E", l: "R" },
+                    { bg: "#4A82B8", l: "K" },
+                    { bg: "#C2703A", l: "S" },
                   ] as const
                 ).map((av, i) => (
                   <div
@@ -533,7 +507,7 @@ export default function Home() {
                       height: 28,
                       borderRadius: "50%",
                       background: av.bg,
-                      border: "2px solid #0C0C0B",
+                      border: "2px solid #F5F0E8",
                       marginLeft: i === 0 ? 0 : -8,
                       display: "flex",
                       alignItems: "center",
@@ -554,11 +528,11 @@ export default function Home() {
                   fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
                   fontSize: 13,
                   fontWeight: 400,
-                  color: "rgba(240,237,230,0.44)",
+                  color: "rgba(26,23,20,0.45)",
                   lineHeight: 1.4,
                 }}
               >
-                <span style={{ color: "rgba(240,237,230,0.72)" }}>
+                <span style={{ color: "rgba(26,23,20,0.70)", fontWeight: 500 }}>
                   240+ readers
                 </span>{" "}
                 getting their daily digest
@@ -583,22 +557,22 @@ export default function Home() {
           100% { background-position:  400px 0; }
         }
 
-        .text-field::placeholder { color: rgba(240,237,230,0.22); }
+        .text-field::placeholder { color: rgba(26,23,20,0.35); }
         .text-field:focus {
-          border-color: rgba(255,210,100,0.38) !important;
-          background: rgba(240,237,230,0.055) !important;
+          border-color: rgba(45,80,22,0.30) !important;
+          background: #FAFAF7 !important;
         }
 
         .pill:hover:not(.pill-on) {
-          border-color: rgba(255,210,100,0.28) !important;
-          background:   rgba(255,210,100,0.06) !important;
-          color:        rgba(240,237,230,0.85) !important;
+          border-color: rgba(45,80,22,0.28) !important;
+          background:   rgba(45,80,22,0.06) !important;
+          color:        #2D5016 !important;
         }
 
         .cta-btn:hover:not(:disabled) {
-          opacity: 0.90 !important;
+          opacity: 0.88 !important;
           transform: translateY(-1px);
-          box-shadow: 0 8px 30px rgba(255,210,100,0.22);
+          box-shadow: 0 8px 28px rgba(45,80,22,0.22);
         }
         .cta-btn:active:not(:disabled) {
           transform: translateY(0);
@@ -607,9 +581,9 @@ export default function Home() {
         }
 
         @media (max-width: 560px) {
-          nav  { padding: 22px 20px !important; }
+          nav  { padding: 18px 20px !important; }
           main { padding: 32px 16px 64px !important; }
-          form { padding: 24px 20px 22px !important; border-radius: 16px !important; }
+          form { padding: 24px 20px 22px !important; border-radius: 12px !important; }
           nav span:last-child { display: none; }
           h1 { font-size: 46px !important; }
         }

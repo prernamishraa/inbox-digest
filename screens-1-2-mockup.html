@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbox Digest — Screen 1 & 2 Redesign Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --cream:       #F5F0E8;
+    --cream-dark:  #EDE7D8;
+    --cream-mid:   #E8E1D0;
+    --amber:       #C9981A;   /* amber darkened for readability on cream */
+    --amber-raw:   #FFD264;   /* for badge/CTA arrow fill reference */
+    --green:       #2D5016;
+    --green-light: rgba(45, 80, 22, 0.07);
+    --green-mid:   rgba(45, 80, 22, 0.14);
+    --green-border:rgba(45, 80, 22, 0.22);
+    --ink:         #1A1714;
+    --ink-soft:    #3D3830;
+    --ink-muted:   rgba(26, 23, 20, 0.45);
+    --ink-faint:   rgba(26, 23, 20, 0.11);
+    --rule:        rgba(26, 23, 20, 0.10);
+    --white:       #FFFFFF;
+    --serif: 'Instrument Serif', serif;
+    --sans:  'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #E0D8C8;
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── MOCKUP FRAME ─── */
+  .mockup-label {
+    text-align: center;
+    padding: 36px 0 18px;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(26,23,20,0.4);
+  }
+
+  .screen {
+    max-width: 780px;
+    margin: 0 auto 60px;
+    background: var(--cream);
+    box-shadow: 0 4px 40px rgba(0,0,0,0.12), 0 1px 4px rgba(0,0,0,0.06);
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* noise */
+  .screen::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 100;
+    border-radius: 12px;
+  }
+
+  /* ─── SHARED BITS ─── */
+  .accent-bar {
+    height: 3px;
+    background: var(--amber-raw);
+  }
+
+  .nav-bar {
+    border-bottom: 1px solid var(--rule);
+    padding: 22px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--cream);
+  }
+
+  .brand {
+    font-family: var(--serif);
+    font-size: 17px;
+    color: var(--ink);
+    letter-spacing: -0.01em;
+  }
+  .brand span { color: var(--amber); }
+
+  .nav-pricing {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 400;
+    letter-spacing: 0.02em;
+    color: var(--ink-muted);
+  }
+
+
+  /* ══════════════════════════════════
+     SCREEN 1 — LANDING PAGE
+  ══════════════════════════════════ */
+
+  .s1-main {
+    padding: 52px 40px 60px;
+    display: flex;
+    justify-content: center;
+  }
+
+  .s1-inner {
+    width: 100%;
+    max-width: 580px;
+  }
+
+  /* Eyebrow */
+  .s1-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 26px;
+  }
+
+  .s1-eyebrow-rule {
+    display: block;
+    width: 22px;
+    height: 1px;
+    background: var(--green);
+    opacity: 0.55;
+    flex-shrink: 0;
+  }
+
+  .s1-eyebrow-text {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--green);
+  }
+
+  /* Headline */
+  .s1-headline {
+    font-family: var(--serif);
+    font-size: clamp(46px, 8vw, 72px);
+    font-weight: 400;
+    line-height: 1.05;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    margin-bottom: 18px;
+  }
+
+  .s1-headline em {
+    font-style: italic;
+    color: var(--green);
+  }
+
+  /* Subline */
+  .s1-subline {
+    font-family: var(--sans);
+    font-size: 16px;
+    font-weight: 400;
+    line-height: 1.7;
+    color: var(--ink-muted);
+    max-width: 440px;
+    margin-bottom: 40px;
+  }
+
+  /* Form card */
+  .s1-form {
+    background: var(--white);
+    border: 1px solid var(--ink-faint);
+    border-radius: 16px;
+    padding: 32px 32px 28px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04);
+  }
+
+  .field-label {
+    display: block;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin-bottom: 9px;
+  }
+
+  .field-input {
+    width: 100%;
+    background: var(--cream);
+    border: 1px solid rgba(26,23,20,0.13);
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-family: var(--sans);
+    font-size: 14px;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .field-input::placeholder { color: var(--ink-muted); opacity: 0.6; }
+
+  .field-input:focus {
+    border-color: var(--green-border);
+    background: #FAFAF7;
+  }
+
+  .pills-label {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--ink-muted);
+    margin: 26px 0 11px;
+  }
+
+  .pills-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 13px;
+    border-radius: 100px;
+    border: 1px solid rgba(26,23,20,0.12);
+    background: transparent;
+    color: rgba(26,23,20,0.52);
+    font-size: 12.5px;
+    font-family: var(--sans);
+    font-weight: 400;
+    cursor: pointer;
+    transition: all 0.15s;
+    line-height: 1;
+  }
+
+  .pill:hover {
+    border-color: var(--green-border);
+    color: var(--green);
+    background: var(--green-light);
+  }
+
+  .pill.on {
+    border-color: var(--green);
+    background: var(--green-light);
+    color: var(--green);
+    font-weight: 500;
+  }
+
+  .optional-label-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 26px 0 9px;
+  }
+
+  .optional-badge {
+    font-size: 10px;
+    font-family: var(--sans);
+    font-weight: 400;
+    letter-spacing: 0.04em;
+    color: var(--ink-muted);
+    background: var(--cream);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 2px 7px;
+  }
+
+  .field-textarea {
+    width: 100%;
+    resize: none;
+    background: var(--cream);
+    border: 1px solid rgba(26,23,20,0.13);
+    border-radius: 8px;
+    padding: 12px 15px;
+    font-family: var(--sans);
+    font-size: 13.5px;
+    color: var(--ink);
+    outline: none;
+    line-height: 1.6;
+    transition: border-color 0.2s;
+  }
+
+  .field-textarea::placeholder { color: var(--ink-muted); opacity: 0.55; }
+
+  /* CTA button */
+  .cta-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 24px;
+    background: var(--green);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    padding: 15px 24px;
+    font-family: var(--sans);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.12s, box-shadow 0.15s;
+  }
+
+  .cta-btn:hover {
+    opacity: 0.88;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 28px rgba(45,80,22,0.22);
+  }
+
+  .cta-note {
+    margin-top: 11px;
+    text-align: center;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* Social proof */
+  .social-proof {
+    margin-top: 32px;
+    display: flex;
+    align-items: center;
+    gap: 13px;
+  }
+
+  .avatars {
+    display: flex;
+  }
+
+  .avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--cream);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: #fff;
+    font-family: var(--sans);
+    flex-shrink: 0;
+  }
+
+  .social-text {
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    line-height: 1.4;
+  }
+
+  .social-text strong {
+    font-weight: 500;
+    color: var(--ink-soft);
+  }
+
+
+  /* ══════════════════════════════════
+     SCREEN 2 — LOADING PAGE
+  ══════════════════════════════════ */
+
+  .s2-main {
+    min-height: 520px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 32px 64px;
+    text-align: center;
+  }
+
+  .s2-message-block {
+    max-width: 540px;
+  }
+
+  .s2-primary {
+    font-family: var(--serif);
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.022em;
+    color: var(--ink);
+    margin-bottom: 10px;
+  }
+
+  .s2-secondary {
+    font-family: var(--serif);
+    font-size: clamp(28px, 5vw, 48px);
+    font-weight: 400;
+    font-style: italic;
+    line-height: 1.15;
+    letter-spacing: -0.022em;
+    color: var(--green);
+  }
+
+  /* Spinner */
+  .spinner {
+    margin-top: 48px;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 2px solid rgba(45,80,22,0.12);
+    border-top-color: rgba(45,80,22,0.6);
+    animation: spin 0.9s linear infinite;
+  }
+
+  .done-circle {
+    margin-top: 48px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(45,80,22,0.1);
+    border: 1.5px solid rgba(45,80,22,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .hint-text {
+    margin-top: 36px;
+    font-family: var(--sans);
+    font-size: 13px;
+    font-weight: 400;
+    color: var(--ink-muted);
+    letter-spacing: 0.02em;
+  }
+
+  /* ─── KEYFRAMES ─── */
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ─── SECTION DIVIDER ─── */
+  .screen-states {
+    display: flex;
+    gap: 0;
+    border-top: 1px solid var(--rule);
+    background: var(--cream-dark);
+  }
+
+  .state-tab {
+    flex: 1;
+    padding: 10px 16px;
+    text-align: center;
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    border-right: 1px solid var(--rule);
+    cursor: default;
+  }
+
+  .state-tab:last-child { border-right: none; }
+  .state-tab.active { color: var(--green); background: var(--green-light); }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 600px) {
+    .nav-bar { padding: 18px 20px; }
+    .nav-pricing { display: none; }
+    .s1-main { padding: 36px 20px 48px; }
+    .s1-form { padding: 24px 20px 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════ SCREEN 1 ═══════════════════════════════════ -->
+
+<div class="mockup-label">Screen 1 — Landing page</div>
+
+<div class="screen">
+  <div class="accent-bar"></div>
+
+  <nav class="nav-bar">
+    <div class="brand">Inbox<span>Digest</span></div>
+    <div class="nav-pricing">7-day free trial · ₹299/mo after</div>
+  </nav>
+
+  <div class="s1-main">
+    <div class="s1-inner">
+
+      <!-- Eyebrow -->
+      <div class="s1-eyebrow">
+        <span class="s1-eyebrow-rule"></span>
+        <span class="s1-eyebrow-text">For Substack readers</span>
+      </div>
+
+      <!-- Headline -->
+      <h1 class="s1-headline">
+        Stop missing<br>
+        the <em>best</em> of<br>
+        Substack
+      </h1>
+
+      <!-- Subline -->
+      <p class="s1-subline">
+        You follow great writers. We surface what's worth your time —
+        one curated digest, every morning, in your inbox.
+      </p>
+
+      <!-- Form card -->
+      <div class="s1-form">
+
+        <!-- URL field -->
+        <label class="field-label" for="url">Your Substack profile URL</label>
+        <div class="field-input" style="color: rgba(26,23,20,0.35); font-size:14px; padding:12px 15px; border-radius:8px; background:var(--cream); border:1px solid rgba(26,23,20,0.13);">
+          substack.com/@yourname
+        </div>
+
+        <!-- Categories -->
+        <div class="pills-label">What do you read? Pick a few</div>
+        <div class="pills-wrap">
+          <span class="pill on">Technology</span>
+          <span class="pill on">Business</span>
+          <span class="pill">Culture</span>
+          <span class="pill">Finance</span>
+          <span class="pill on">Science</span>
+          <span class="pill">Health</span>
+          <span class="pill">Politics</span>
+          <span class="pill">Philosophy</span>
+          <span class="pill">Media</span>
+          <span class="pill">Startups</span>
+          <span class="pill">Climate</span>
+          <span class="pill">Food</span>
+          <span class="pill">Travel</span>
+          <span class="pill">Design</span>
+        </div>
+
+        <!-- Optional field -->
+        <div class="optional-label-row">
+          <span class="field-label" style="margin:0;">Anything specific you love?</span>
+          <span class="optional-badge">optional</span>
+        </div>
+        <div class="field-textarea" style="color: rgba(26,23,20,0.35); font-size:13.5px; padding:12px 15px; min-height:64px; border-radius:8px; background:var(--cream); border:1px solid rgba(26,23,20,0.13); display:block; line-height:1.6;">
+          e.g. long-form essays, contrarian takes, founder stories…
+        </div>
+
+        <!-- CTA -->
+        <button class="cta-btn">
+          Build my digest
+          <svg width="14" height="14" viewBox="0 0 15 15" fill="none" aria-hidden>
+            <path d="M2.5 7.5H12.5M8.5 3.5L12.5 7.5L8.5 11.5" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <p class="cta-note">Free for 7 days · ₹299/month after · No card needed to start</p>
+
+      </div>
+
+      <!-- Social proof -->
+      <div class="social-proof">
+        <div class="avatars">
+          <div class="avatar" style="background:#7C6EAF; margin-left:0;">A</div>
+          <div class="avatar" style="background:#3A8C6E; margin-left:-8px;">R</div>
+          <div class="avatar" style="background:#4A82B8; margin-left:-8px;">K</div>
+          <div class="avatar" style="background:#C2703A; margin-left:-8px;">S</div>
+        </div>
+        <span class="social-text"><strong>240+ readers</strong> getting their daily digest</span>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════ SCREEN 2 ═══════════════════════════════════ -->
+
+<div class="mockup-label">Screen 2 — Loading page (5 message states)</div>
+
+<div class="screen" style="margin-bottom:80px;">
+  <div class="accent-bar"></div>
+
+  <nav class="nav-bar">
+    <div class="brand">Inbox<span>Digest</span></div>
+  </nav>
+
+  <!-- State tabs -->
+  <div class="screen-states">
+    <div class="state-tab active">Fetching subscriptions…</div>
+    <div class="state-tab">Oh wow — you read X.</div>
+    <div class="state-tab">I love what you are reading.</div>
+    <div class="state-tab">Most impressive collection.</div>
+    <div class="state-tab">Almost there…</div>
+    <div class="state-tab">Your digest is ready.</div>
+  </div>
+
+  <!-- State 1: Fetching -->
+  <div class="s2-main" style="border-bottom: 1px solid var(--rule);">
+    <div class="s2-message-block">
+      <p class="s2-primary">Finding your subscriptions…</p>
+    </div>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- State 2: Wow -->
+  <div class="s2-main" style="border-bottom: 1px solid var(--rule);">
+    <div class="s2-message-block">
+      <p class="s2-primary">Oh wow — you read Morning Brew.</p>
+      <p class="s2-secondary">Great taste.</p>
+    </div>
+    <div class="spinner"></div>
+    <p class="hint-text" style="opacity:0;">&nbsp;</p>
+  </div>
+
+  <!-- State 3: Love -->
+  <div class="s2-main" style="border-bottom: 1px solid var(--rule);">
+    <div class="s2-message-block">
+      <p class="s2-primary">I love what you are reading.</p>
+    </div>
+    <div class="spinner"></div>
+    <p class="hint-text">Building your personalised digest…</p>
+  </div>
+
+  <!-- State 4: Impressive -->
+  <div class="s2-main" style="border-bottom: 1px solid var(--rule);">
+    <div class="s2-message-block">
+      <p class="s2-primary">Most impressive collection.</p>
+    </div>
+    <div class="spinner"></div>
+    <p class="hint-text">Building your personalised digest…</p>
+  </div>
+
+  <!-- State 5: Done -->
+  <div class="s2-main">
+    <div class="s2-message-block">
+      <p class="s2-primary">Your digest is ready.</p>
+    </div>
+    <div class="done-circle">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+        <path d="M3 8L6.5 11.5L13 5" stroke="#2D5016" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
