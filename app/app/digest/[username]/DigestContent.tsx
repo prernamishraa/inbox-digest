@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { DigestPost } from "@/app/api/digest/posts/route";
@@ -79,17 +79,14 @@ function organizeSections(
 
   const used = new Set<number>();
 
-  // Section 2: top creator
   const topCreatorPost = topPub
     ? sorted.find((p) => p.newsletterName === topPub.newsletterName) ?? null
     : null;
   if (topCreatorPost) used.add(topCreatorPost.id);
 
-  // Section 1: most recent posts not from top creator
   const missed = sorted.filter((p) => !used.has(p.id)).slice(0, 2);
   missed.forEach((p) => used.add(p.id));
 
-  // Section 4: trending — high subscriber count
   let trending = sorted
     .filter((p) => !used.has(p.id) && (p.subscriberCount ?? 0) > 50000)
     .slice(0, 2);
@@ -99,125 +96,44 @@ function organizeSections(
   }
   trending.forEach((p) => used.add(p.id));
 
-  // Section 3: category match
   const category = userCategories[0] ?? "Great writing";
   const categoryPosts = sorted.filter((p) => !used.has(p.id)).slice(0, 2);
   categoryPosts.forEach((p) => used.add(p.id));
 
-  // Section 5: discovery — pubs not yet featured
-  const featuredNames = new Set<string>([
-    topCreatorPost?.newsletterName,
-    ...missed.map((p) => p.newsletterName),
-    ...trending.map((p) => p.newsletterName),
-    ...categoryPosts.map((p) => p.newsletterName),
-  ].filter(Boolean) as string[]);
+  const featuredNames = new Set<string>(
+    [
+      topCreatorPost?.newsletterName,
+      ...missed.map((p) => p.newsletterName),
+      ...trending.map((p) => p.newsletterName),
+      ...categoryPosts.map((p) => p.newsletterName),
+    ].filter(Boolean) as string[]
+  );
 
   const discovery = subscriptions
     .filter((s) => !featuredNames.has(s.newsletterName))
     .slice(0, 3);
 
-  return {
-    missed,
-    topCreator: topCreatorPost,
-    topCreatorPub: topPub ?? null,
-    category,
-    categoryPosts,
-    trending,
-    discovery,
-  };
+  return { missed, topCreator: topCreatorPost, topCreatorPub: topPub ?? null, category, categoryPosts, trending, discovery };
 }
 
-// ─── SUBCOMPONENTS ───────────────────────────────────────────────────────────
+// ─── SUBCOMPONENTS ────────────────────────────────────────────────────────────
 
 function PostCard({ post, index = 0 }: { post: DigestPost; index?: number }) {
   const tag = guessCategory(post.newsletterName, post.authorName);
   return (
-    <div
-      className="post-card"
-      style={{
-        background: "#FFFFFF",
-        padding: "26px 28px 28px",
-        animationDelay: `${0.05 + index * 0.06}s`,
-      }}
-    >
+    <div className="post-card" style={{ background: "#FFFFFF", padding: "26px 28px 28px", animationDelay: `${0.05 + index * 0.06}s` }}>
       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
-        <span style={{
-          display: "inline-block",
-          background: "#2D5016",
-          color: "#fff",
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: "0.07em",
-          textTransform: "uppercase" as const,
-          padding: "3px 9px",
-          borderRadius: 2,
-          flexShrink: 0,
-        }}>{tag}</span>
-        <span style={{
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 11,
-          color: "rgba(26,23,20,0.42)",
-          whiteSpace: "nowrap" as const,
-          flexShrink: 0,
-        }}>{relativeDate(post.post_date)}</span>
+        <span style={{ display: "inline-block", background: "#2D5016", color: "#fff", fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase" as const, padding: "3px 9px", borderRadius: 2, flexShrink: 0 }}>{tag}</span>
+        <span style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11, color: "rgba(26,23,20,0.42)", whiteSpace: "nowrap" as const, flexShrink: 0 }}>{relativeDate(post.post_date)}</span>
       </div>
-
-      <h3 style={{
-        fontFamily: "var(--font-serif),'Instrument Serif',serif",
-        fontSize: 20,
-        fontWeight: 400,
-        lineHeight: 1.2,
-        letterSpacing: "-0.016em",
-        color: "#1A1714",
-        marginBottom: 5,
-      }}>{post.title}</h3>
-
-      <p style={{
-        fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-        fontSize: 12,
-        fontWeight: 500,
-        color: "rgba(26,23,20,0.45)",
-        letterSpacing: "0.02em",
-        marginBottom: post.subtitle ? 13 : 16,
-      }}>{post.authorName} · {post.newsletterName}</p>
-
+      <h3 style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: 20, fontWeight: 400, lineHeight: 1.2, letterSpacing: "-0.016em", color: "#1A1714", marginBottom: 5 }}>{post.title}</h3>
+      <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(26,23,20,0.45)", letterSpacing: "0.02em", marginBottom: post.subtitle ? 13 : 16 }}>{post.authorName} · {post.newsletterName}</p>
       {post.subtitle && (
-        <p style={{
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 13.5,
-          fontWeight: 400,
-          lineHeight: 1.65,
-          color: "#3D3830",
-          marginBottom: 16,
-          display: "-webkit-box",
-          WebkitLineClamp: 4,
-          WebkitBoxOrient: "vertical" as const,
-          overflow: "hidden",
-        }}>{post.subtitle}</p>
+        <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 13.5, fontWeight: 400, lineHeight: 1.65, color: "#3D3830", marginBottom: 16, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>{post.subtitle}</p>
       )}
-
-      <a
-        href={post.canonical_url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="read-link"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 5,
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 12,
-          fontWeight: 500,
-          color: "#2D5016",
-          textDecoration: "none",
-          letterSpacing: "0.01em",
-        }}
-      >
+      <a href={post.canonical_url} target="_blank" rel="noopener noreferrer" className="read-link" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "#2D5016", textDecoration: "none", letterSpacing: "0.01em" }}>
         Read on Substack
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
-          <path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
+        <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden><path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
       </a>
     </div>
   );
@@ -226,92 +142,22 @@ function PostCard({ post, index = 0 }: { post: DigestPost; index?: number }) {
 function FeaturedCard({ post }: { post: DigestPost }) {
   const tag = guessCategory(post.newsletterName, post.authorName);
   return (
-    <div
-      className="post-card"
-      style={{
-        background: "#FFFFFF",
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 0,
-        animationDelay: "0.08s",
-      }}
-    >
+    <div className="post-card" style={{ background: "#FFFFFF", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, animationDelay: "0.08s" }}>
       <div style={{ padding: "30px 32px", borderRight: "1px solid rgba(26,23,20,0.08)" }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 12 }}>
-          <span style={{
-            display: "inline-block",
-            background: "#2D5016",
-            color: "#fff",
-            fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-            fontSize: 10,
-            fontWeight: 600,
-            letterSpacing: "0.07em",
-            textTransform: "uppercase" as const,
-            padding: "3px 9px",
-            borderRadius: 2,
-          }}>{tag}</span>
-          <span style={{
-            fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-            fontSize: 11,
-            color: "rgba(26,23,20,0.42)",
-            whiteSpace: "nowrap" as const,
-          }}>{relativeDate(post.post_date)}</span>
+          <span style={{ display: "inline-block", background: "#2D5016", color: "#fff", fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase" as const, padding: "3px 9px", borderRadius: 2 }}>{tag}</span>
+          <span style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11, color: "rgba(26,23,20,0.42)", whiteSpace: "nowrap" as const }}>{relativeDate(post.post_date)}</span>
         </div>
-        <h3 style={{
-          fontFamily: "var(--font-serif),'Instrument Serif',serif",
-          fontSize: 24,
-          fontWeight: 400,
-          lineHeight: 1.18,
-          letterSpacing: "-0.018em",
-          color: "#1A1714",
-          marginBottom: 8,
-        }}>{post.title}</h3>
-        <p style={{
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 12,
-          fontWeight: 500,
-          color: "rgba(26,23,20,0.45)",
-          letterSpacing: "0.02em",
-        }}>{post.authorName} · {post.newsletterName}</p>
+        <h3 style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: 24, fontWeight: 400, lineHeight: 1.18, letterSpacing: "-0.018em", color: "#1A1714", marginBottom: 8 }}>{post.title}</h3>
+        <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(26,23,20,0.45)", letterSpacing: "0.02em" }}>{post.authorName} · {post.newsletterName}</p>
       </div>
-
       <div style={{ padding: "30px 32px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
         {post.subtitle && (
-          <p style={{
-            fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-            fontSize: 13.5,
-            fontWeight: 400,
-            lineHeight: 1.65,
-            color: "#3D3830",
-            marginBottom: 20,
-            display: "-webkit-box",
-            WebkitLineClamp: 5,
-            WebkitBoxOrient: "vertical" as const,
-            overflow: "hidden",
-          }}>{post.subtitle}</p>
+          <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 13.5, fontWeight: 400, lineHeight: 1.65, color: "#3D3830", marginBottom: 20, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>{post.subtitle}</p>
         )}
-        <a
-          href={post.canonical_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="read-link"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 5,
-            fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-            fontSize: 12,
-            fontWeight: 500,
-            color: "#2D5016",
-            textDecoration: "none",
-            letterSpacing: "0.01em",
-            alignSelf: "flex-start",
-          }}
-        >
+        <a href={post.canonical_url} target="_blank" rel="noopener noreferrer" className="read-link" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "#2D5016", textDecoration: "none", letterSpacing: "0.01em", alignSelf: "flex-start" }}>
           Read on Substack
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden>
-            <path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden><path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </a>
       </div>
     </div>
@@ -327,152 +173,36 @@ function DiscoveryCard({ sub, index = 0 }: { sub: Subscription; index?: number }
       ? `${Math.round(sub.subscriberCount / 1000)}K subscribers`
       : `${sub.subscriberCount} subscribers`
     : null;
-
   return (
-    <div
-      className="post-card"
-      style={{
-        background: "#EDE7D8",
-        padding: "26px 28px 28px",
-        animationDelay: `${0.05 + index * 0.06}s`,
-      }}
-    >
-      <span style={{
-        display: "inline-block",
-        background: "#2D5016",
-        color: "#fff",
-        fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-        fontSize: 10,
-        fontWeight: 600,
-        letterSpacing: "0.07em",
-        textTransform: "uppercase" as const,
-        padding: "3px 9px",
-        borderRadius: 2,
-        marginBottom: 12,
-      }}>{tag}</span>
-
-      <h3 style={{
-        fontFamily: "var(--font-serif),'Instrument Serif',serif",
-        fontSize: 19,
-        fontWeight: 400,
-        lineHeight: 1.2,
-        letterSpacing: "-0.015em",
-        color: "#1A1714",
-        marginBottom: 5,
-      }}>{sub.newsletterName}</h3>
-
-      <p style={{
-        fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-        fontSize: 12,
-        fontWeight: 400,
-        color: "rgba(26,23,20,0.50)",
-        marginBottom: 16,
-      }}>{sub.authorName}{count ? ` · ${count}` : ""}</p>
-
-      <a
-        href={sub.publicationUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="follow-btn"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "8px 14px",
-          border: "1.5px solid #2D5016",
-          borderRadius: 3,
-          background: "transparent",
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 12,
-          fontWeight: 500,
-          letterSpacing: "0.03em",
-          color: "#2D5016",
-          textDecoration: "none",
-          transition: "all 0.18s ease",
-        }}
-      >
-        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden>
-          <path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
+    <div className="post-card" style={{ background: "#EDE7D8", padding: "26px 28px 28px", animationDelay: `${0.05 + index * 0.06}s` }}>
+      <span style={{ display: "inline-block", background: "#2D5016", color: "#fff", fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.07em", textTransform: "uppercase" as const, padding: "3px 9px", borderRadius: 2, marginBottom: 12 }}>{tag}</span>
+      <h3 style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: 19, fontWeight: 400, lineHeight: 1.2, letterSpacing: "-0.015em", color: "#1A1714", marginBottom: 5 }}>{sub.newsletterName}</h3>
+      <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 400, color: "rgba(26,23,20,0.50)", marginBottom: 16 }}>{sub.authorName}{count ? ` · ${count}` : ""}</p>
+      <a href={sub.publicationUrl} target="_blank" rel="noopener noreferrer" className="follow-btn" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "8px 14px", border: "1.5px solid #2D5016", borderRadius: 3, fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, letterSpacing: "0.03em", color: "#2D5016", textDecoration: "none", transition: "all 0.18s ease" }}>
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none" aria-hidden><path d="M6 2v8M2 6h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
         Visit on Substack
       </a>
     </div>
   );
 }
 
-function SectionHeader({
-  num,
-  title,
-  count,
-}: {
-  num: string;
-  title: React.ReactNode;
-  count?: string;
-}) {
+function SectionHeader({ num, title, count }: { num: string; title: React.ReactNode; count?: string }) {
   return (
-    <div style={{
-      display: "flex",
-      alignItems: "flex-end",
-      justifyContent: "space-between",
-      paddingBottom: 18,
-      borderBottom: "1.5px solid #1A1714",
-      marginBottom: 24,
-    }}>
+    <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", paddingBottom: 18, borderBottom: "1.5px solid #1A1714", marginBottom: 24 }}>
       <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-        <span style={{
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 10,
-          fontWeight: 600,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase" as const,
-          color: "rgba(26,23,20,0.40)",
-        }}>{num}</span>
-        <h2 style={{
-          fontFamily: "var(--font-serif),'Instrument Serif',serif",
-          fontSize: "clamp(24px, 3.5vw, 36px)",
-          fontWeight: 400,
-          lineHeight: 1.1,
-          letterSpacing: "-0.02em",
-          color: "#1A1714",
-        }}>{title}</h2>
+        <span style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 10, fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: "rgba(26,23,20,0.40)" }}>{num}</span>
+        <h2 style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: "clamp(24px, 3.5vw, 36px)", fontWeight: 400, lineHeight: 1.1, letterSpacing: "-0.02em", color: "#1A1714" }}>{title}</h2>
       </div>
-      {count && (
-        <span style={{
-          fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-          fontSize: 12,
-          color: "rgba(26,23,20,0.40)",
-          marginBottom: 4,
-        }}>{count}</span>
-      )}
+      {count && <span style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, color: "rgba(26,23,20,0.40)", marginBottom: 4 }}>{count}</span>}
     </div>
   );
 }
 
-function LoadingState() {
+function LoadingState({ message = "Building your digest…" }: { message?: string }) {
   return (
-    <div style={{
-      minHeight: "100vh",
-      background: "#F5F0E8",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: 20,
-    }}>
-      <div style={{
-        width: 28,
-        height: 28,
-        borderRadius: "50%",
-        border: "2px solid rgba(45,80,22,0.12)",
-        borderTopColor: "rgba(45,80,22,0.60)",
-        animation: "spin 0.9s linear infinite",
-      }} />
-      <p style={{
-        fontFamily: "'Instrument Serif',serif",
-        fontSize: 18,
-        color: "rgba(26,23,20,0.50)",
-        letterSpacing: "-0.01em",
-      }}>Building your digest…</p>
+    <div style={{ minHeight: "100vh", background: "#F5F0E8", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
+      <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2px solid rgba(45,80,22,0.12)", borderTopColor: "rgba(45,80,22,0.60)", animation: "spin 0.9s linear infinite" }} />
+      <p style={{ fontFamily: "'Instrument Serif',serif", fontSize: 18, color: "rgba(26,23,20,0.50)", letterSpacing: "-0.01em" }}>{message}</p>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -481,100 +211,78 @@ function LoadingState() {
 // ─── MAIN COMPONENT ───────────────────────────────────────────────────────────
 
 export function DigestContent({ username }: { username: string }) {
+  // Try Convex for user preferences — with graceful degradation if unavailable
   const userData = useQuery(api.users.getUserByUsername, { substackUsername: username });
-  const convexSubs = useQuery(
-    api.users.getSubscriptions,
-    userData?._id ? { userId: userData._id } : "skip"
-  );
 
-  const [fallbackSubs, setFallbackSubs] = useState<Subscription[] | null>(null);
+  const [subs, setSubs] = useState<Subscription[] | null>(null);
   const [posts, setPosts] = useState<DigestPost[] | null>(null);
-  const [postsLoading, setPostsLoading] = useState(false);
+  const [convexTimedOut, setConvexTimedOut] = useState(false);
+  const postsFetchedRef = useRef(false);
 
-  // If user not in Convex, fall back to live Substack fetch
+  // Always fetch subscriptions directly from Substack — don't wait for Convex
   useEffect(() => {
-    if (userData === undefined) return;
-    if (userData === null) {
-      fetch(`/api/subscriptions/${encodeURIComponent(username)}`)
-        .then((r) => r.json())
-        .then((d: { subscriptions?: Subscription[] }) =>
-          setFallbackSubs(d.subscriptions ?? [])
-        )
-        .catch(() => setFallbackSubs([]));
+    fetch(`/api/subscriptions/${encodeURIComponent(username)}`)
+      .then((r) => r.json())
+      .then((d: { subscriptions?: Subscription[] }) => setSubs(d.subscriptions ?? []))
+      .catch(() => setSubs([]));
+  }, [username]);
+
+  // 4-second timeout: if Convex hasn't resolved, proceed anyway
+  useEffect(() => {
+    const tid = setTimeout(() => setConvexTimedOut(true), 4000);
+    return () => clearTimeout(tid);
+  }, []);
+
+  // Fetch posts once subs are loaded AND Convex has resolved (or timed out)
+  const convexReady = userData !== undefined || convexTimedOut;
+
+  useEffect(() => {
+    if (postsFetchedRef.current) return;
+    if (!subs) return; // still loading subs
+
+    // If no subscriptions, exit loading state immediately
+    if (subs.length === 0) {
+      setPosts([]);
+      return;
     }
-  }, [userData, username]);
 
-  const activeSubs: Subscription[] | null =
-    convexSubs !== undefined ? convexSubs : fallbackSubs;
+    if (!convexReady) return; // wait up to 4s for Convex categories
 
-  // Fetch posts once subscriptions are available
-  useEffect(() => {
-    if (!activeSubs || activeSubs.length === 0 || postsLoading || posts !== null) return;
-    setPostsLoading(true);
+    postsFetchedRef.current = true;
     fetch("/api/digest/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ subscriptions: activeSubs }),
+      body: JSON.stringify({ subscriptions: subs }),
     })
       .then((r) => r.json())
       .then((d: { posts?: DigestPost[] }) => setPosts(d.posts ?? []))
-      .catch(() => setPosts([]))
-      .finally(() => setPostsLoading(false));
-  }, [activeSubs, postsLoading, posts]);
+      .catch(() => setPosts([]));
+  }, [subs, convexReady]);
 
-  // Still resolving
-  if (userData === undefined || (userData && convexSubs === undefined) || postsLoading || posts === null) {
-    return <LoadingState />;
-  }
+  if (!subs || posts === null) return <LoadingState />;
 
-  const subs = activeSubs ?? [];
   const userCategories = userData?.categories ?? [];
   const sections = organizeSections(posts, subs, userCategories);
 
-  const totalPosts = posts.length;
-  const savedMinutes = Math.round(totalPosts * 7);
+  const savedMinutes = Math.round(posts.length * 7);
   const savedLabel = savedMinutes >= 60
     ? `${Math.floor(savedMinutes / 60)}h ${savedMinutes % 60}m`
     : `${savedMinutes} min`;
 
   return (
     <div style={{ minHeight: "100vh", background: "#F5F0E8", position: "relative" }}>
-      {/* Noise */}
-      <div aria-hidden style={{
-        position: "fixed", inset: 0,
-        backgroundImage: NOISE_SVG, backgroundSize: "200px 200px",
-        opacity: 0.025, pointerEvents: "none", zIndex: 0,
-      }} />
+      <div aria-hidden style={{ position: "fixed", inset: 0, backgroundImage: NOISE_SVG, backgroundSize: "200px 200px", opacity: 0.025, pointerEvents: "none", zIndex: 0 }} />
 
       <div style={{ position: "relative", zIndex: 1 }}>
         {/* Amber accent bar */}
         <div style={{ height: 3, background: "#FFD264" }} />
 
         {/* Masthead */}
-        <header style={{
-          borderBottom: "1.5px solid #1A1714",
-          padding: "20px 40px",
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: 16,
-        }}>
-          <div style={{
-            fontFamily: "var(--font-serif),'Instrument Serif',serif",
-            fontSize: 17,
-            color: "#1A1714",
-            letterSpacing: "-0.01em",
-          }}>
+        <header style={{ borderBottom: "1.5px solid #1A1714", padding: "20px 40px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 16, flexWrap: "wrap" as const }}>
+          <div style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: 17, color: "#1A1714", letterSpacing: "-0.01em" }}>
             Inbox<span style={{ color: "#C9981A" }}>Digest</span>
           </div>
-          <div style={{
-            fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-            fontSize: 11,
-            fontWeight: 500,
-            letterSpacing: "0.07em",
-            color: "rgba(26,23,20,0.42)",
-            textTransform: "uppercase" as const,
-          }}>
+          <div style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11, fontWeight: 500, letterSpacing: "0.07em", color: "rgba(26,23,20,0.42)", textTransform: "uppercase" as const }}>
             {today()} · @{username}
           </div>
         </header>
@@ -582,106 +290,47 @@ export function DigestContent({ username }: { username: string }) {
         <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 32px" }}>
 
           {/* Digest header */}
-          <div style={{
-            padding: "48px 0 40px",
-            borderBottom: "1px solid rgba(26,23,20,0.10)",
-            animation: "fadeUp 0.6s ease 0.02s both",
-          }}>
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              marginBottom: 14,
-            }}>
-              <span style={{
-                fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: "0.11em",
-                textTransform: "uppercase" as const,
-                color: "#2D5016",
-              }}>Your personal digest</span>
+          <div style={{ padding: "48px 0 40px", borderBottom: "1px solid rgba(26,23,20,0.10)", animation: "fadeUp 0.6s ease 0.02s both" }}>
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+              <span style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11, fontWeight: 500, letterSpacing: "0.11em", textTransform: "uppercase" as const, color: "#2D5016" }}>Your personal digest</span>
               <span style={{ display: "block", width: 28, height: 1, background: "#2D5016", opacity: 0.45 }} />
             </div>
 
-            <h1 style={{
-              fontFamily: "var(--font-serif),'Instrument Serif',serif",
-              fontSize: "clamp(38px, 5.5vw, 64px)",
-              fontWeight: 400,
-              lineHeight: 1.05,
-              letterSpacing: "-0.025em",
-              color: "#1A1714",
-              marginBottom: 16,
-            }}>
+            <h1 style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: "clamp(38px, 5.5vw, 64px)", fontWeight: 400, lineHeight: 1.05, letterSpacing: "-0.025em", color: "#1A1714", marginBottom: 16 }}>
               The best of your inbox,<br />
               <em style={{ fontStyle: "italic", color: "#2D5016" }}>curated</em> for you.
             </h1>
 
-            <p style={{
-              fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-              fontSize: 14,
-              fontWeight: 400,
-              color: "rgba(26,23,20,0.50)",
-              marginBottom: 36,
-            }}>
+            <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 14, fontWeight: 400, color: "rgba(26,23,20,0.50)", marginBottom: 36 }}>
               Pulled from {subs.length} newsletter{subs.length !== 1 ? "s" : ""} you follow — we found the pieces worth your time.
             </p>
 
             {/* Stats row */}
-            <div style={{
-              display: "flex",
-              border: "1px solid rgba(26,23,20,0.10)",
-              borderRadius: 4,
-              overflow: "hidden",
-              background: "#EDE7D8",
-              animation: "fadeUp 0.5s ease 0.12s both",
-            }}>
+            <div style={{ display: "flex", border: "1px solid rgba(26,23,20,0.10)", borderRadius: 4, overflow: "hidden", background: "#EDE7D8", animation: "fadeUp 0.5s ease 0.12s both" }}>
               {[
                 { value: subs.length.toString(), label: "Newsletters tracked" },
-                { value: totalPosts.toString(), label: "Posts fetched" },
+                { value: posts.length.toString(), label: "Posts fetched" },
                 { value: savedLabel, label: "Reading time saved" },
               ].map((s, i, arr) => (
-                <div key={s.label} style={{
-                  flex: 1,
-                  padding: "16px 22px",
-                  borderRight: i < arr.length - 1 ? "1px solid rgba(26,23,20,0.10)" : "none",
-                }}>
-                  <div style={{
-                    fontFamily: "var(--font-serif),'Instrument Serif',serif",
-                    fontSize: 34,
-                    lineHeight: 1,
-                    letterSpacing: "-0.03em",
-                    color: "#1A1714",
-                    marginBottom: 4,
-                  }}>{s.value}</div>
-                  <div style={{
-                    fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-                    fontSize: 11,
-                    fontWeight: 500,
-                    letterSpacing: "0.06em",
-                    textTransform: "uppercase" as const,
-                    color: "rgba(26,23,20,0.42)",
-                  }}>{s.label}</div>
+                <div key={s.label} style={{ flex: 1, padding: "16px 22px", borderRight: i < arr.length - 1 ? "1px solid rgba(26,23,20,0.10)" : "none" }}>
+                  <div style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: 34, lineHeight: 1, letterSpacing: "-0.03em", color: "#1A1714", marginBottom: 4 }}>{s.value}</div>
+                  <div style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11, fontWeight: 500, letterSpacing: "0.06em", textTransform: "uppercase" as const, color: "rgba(26,23,20,0.42)" }}>{s.label}</div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ── Section 1: Missed this week ── */}
+          {/* Section 1: Missed this week */}
           {sections.missed.length > 0 && (
             <section style={{ paddingTop: 52, animation: "fadeUp 0.5s ease 0.05s both" }}>
-              <SectionHeader
-                num="01 / 05"
-                title={<>Missed <em style={{ fontStyle: "italic" }}>this week</em></>}
-                count={`${sections.missed.length} post${sections.missed.length !== 1 ? "s" : ""}`}
-              />
+              <SectionHeader num="01 / 05" title={<>Missed <em style={{ fontStyle: "italic" }}>this week</em></>} count={`${sections.missed.length} post${sections.missed.length !== 1 ? "s" : ""}`} />
               <div className="card-grid" style={{ marginBottom: 52 }}>
                 {sections.missed.map((p, i) => <PostCard key={p.id} post={p} index={i} />)}
               </div>
             </section>
           )}
 
-          {/* ── Section 2: Your top creator posted ── */}
+          {/* Section 2: Top creator */}
           {sections.topCreator && (
             <section style={{ paddingTop: sections.missed.length > 0 ? 0 : 52, animation: "fadeUp 0.5s ease 0.15s both" }}>
               <SectionHeader
@@ -697,16 +346,12 @@ export function DigestContent({ username }: { username: string }) {
             </section>
           )}
 
-          {/* ── Section 3: Because you like [topic] ── */}
+          {/* Section 3: Because you like */}
           {sections.categoryPosts.length > 0 && (
             <section style={{ animation: "fadeUp 0.5s ease 0.25s both" }}>
               <SectionHeader
                 num="03 / 05"
-                title={
-                  <>Because you like{" "}
-                    <em style={{ fontStyle: "italic", color: "#2D5016" }}>{sections.category}</em>
-                  </>
-                }
+                title={<>Because you like <em style={{ fontStyle: "italic", color: "#2D5016" }}>{sections.category}</em></>}
                 count={`${sections.categoryPosts.length} post${sections.categoryPosts.length !== 1 ? "s" : ""}`}
               />
               <div className="card-grid" style={{ marginBottom: 52 }}>
@@ -715,32 +360,22 @@ export function DigestContent({ username }: { username: string }) {
             </section>
           )}
 
-          {/* ── Section 4: Trending this week ── */}
+          {/* Section 4: Trending */}
           {sections.trending.length > 0 && (
             <section style={{ animation: "fadeUp 0.5s ease 0.35s both" }}>
-              <SectionHeader
-                num="04 / 05"
-                title={<>Trending <em style={{ fontStyle: "italic" }}>this week</em></>}
-                count={`${sections.trending.length} post${sections.trending.length !== 1 ? "s" : ""}`}
-              />
+              <SectionHeader num="04 / 05" title={<>Trending <em style={{ fontStyle: "italic" }}>this week</em></>} count={`${sections.trending.length} post${sections.trending.length !== 1 ? "s" : ""}`} />
               <div className="card-grid" style={{ marginBottom: 52 }}>
                 {sections.trending.map((p, i) => <PostCard key={p.id} post={p} index={i} />)}
               </div>
             </section>
           )}
 
-          {/* ── Section 5: You might also like ── */}
+          {/* Section 5: Discovery */}
           {sections.discovery.length > 0 && (
             <section style={{ animation: "fadeUp 0.5s ease 0.45s both" }}>
-              <SectionHeader
-                num="05 / 05"
-                title={<>You might <em style={{ fontStyle: "italic" }}>also like</em></>}
-                count="Discovery"
-              />
+              <SectionHeader num="05 / 05" title={<>You might <em style={{ fontStyle: "italic" }}>also like</em></>} count="Discovery" />
               <div className="card-grid card-grid-three" style={{ marginBottom: 64 }}>
-                {sections.discovery.map((s, i) => (
-                  <DiscoveryCard key={s.publicationUrl} sub={s} index={i} />
-                ))}
+                {sections.discovery.map((s, i) => <DiscoveryCard key={s.publicationUrl} sub={s} index={i} />)}
               </div>
             </section>
           )}
@@ -748,63 +383,24 @@ export function DigestContent({ username }: { username: string }) {
           {/* Empty state */}
           {posts.length === 0 && (
             <div style={{ padding: "80px 0", textAlign: "center" }}>
-              <p style={{
-                fontFamily: "'Instrument Serif',serif",
-                fontSize: 24,
-                color: "rgba(26,23,20,0.45)",
-                letterSpacing: "-0.01em",
-              }}>
-                No posts found yet.
-              </p>
-              <p style={{
-                fontFamily: "'DM Sans',sans-serif",
-                fontSize: 14,
-                color: "rgba(26,23,20,0.38)",
-                marginTop: 10,
-              }}>
+              <p style={{ fontFamily: "'Instrument Serif',serif", fontSize: 24, color: "rgba(26,23,20,0.45)", letterSpacing: "-0.01em" }}>No posts found yet.</p>
+              <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: 14, color: "rgba(26,23,20,0.38)", marginTop: 10 }}>
                 We couldn&apos;t reach your subscriptions right now. Check back later.
               </p>
             </div>
           )}
 
           {/* Footer */}
-          <footer style={{
-            borderTop: "1.5px solid #1A1714",
-            padding: "28px 0 48px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 20,
-            flexWrap: "wrap" as const,
-          }}>
-            <div style={{
-              fontFamily: "var(--font-serif),'Instrument Serif',serif",
-              fontSize: 15,
-              color: "#1A1714",
-            }}>
+          <footer style={{ borderTop: "1.5px solid #1A1714", padding: "28px 0 48px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 20, flexWrap: "wrap" as const }}>
+            <div style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: 15, color: "#1A1714" }}>
               Inbox<span style={{ color: "#C9981A" }}>Digest</span>
             </div>
-            <div style={{
-              fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-              fontSize: 12,
-              color: "rgba(26,23,20,0.40)",
-            }}>
+            <div style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, color: "rgba(26,23,20,0.40)" }}>
               Generated for @{username} · {today()}
             </div>
-            <div style={{ display: "flex", gap: 20 }}>
-              {[
-                { label: "Adjust preferences", href: "/" },
-              ].map((l) => (
-                <a key={l.href} href={l.href} style={{
-                  fontFamily: "var(--font-sans),'DM Sans',sans-serif",
-                  fontSize: 12,
-                  fontWeight: 400,
-                  color: "rgba(26,23,20,0.42)",
-                  textDecoration: "none",
-                  transition: "color 0.15s",
-                }}>{l.label}</a>
-              ))}
-            </div>
+            <a href="/" style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 400, color: "rgba(26,23,20,0.42)", textDecoration: "none" }}>
+              Adjust preferences
+            </a>
           </footer>
 
         </div>
@@ -818,7 +414,6 @@ export function DigestContent({ username }: { username: string }) {
         @keyframes spin {
           to { transform: rotate(360deg); }
         }
-
         .card-grid {
           display: grid;
           grid-template-columns: repeat(2, 1fr);
@@ -828,34 +423,21 @@ export function DigestContent({ username }: { username: string }) {
           border-radius: 4px;
           overflow: hidden;
         }
-
         .card-grid-single {
           border: 1px solid rgba(26,23,20,0.08);
           border-radius: 4px;
           overflow: hidden;
         }
-
         .card-grid-three {
           grid-template-columns: repeat(3, 1fr);
         }
-
-        .post-card {
-          animation: fadeUp 0.5s ease both;
-        }
-
-        .read-link:hover {
-          text-decoration: underline;
-        }
-
-        .follow-btn:hover {
-          background: #2D5016 !important;
-          color: #fff !important;
-        }
-
+        .post-card { animation: fadeUp 0.5s ease both; }
+        .read-link:hover { text-decoration: underline; }
+        .follow-btn:hover { background: #2D5016 !important; color: #fff !important; }
         @media (max-width: 740px) {
           .card-grid { grid-template-columns: 1fr !important; }
           .card-grid-three { grid-template-columns: 1fr !important; }
-          header { padding: 18px 20px !important; flex-direction: column; gap: 6px; }
+          header { flex-direction: column !important; gap: 4px !important; padding: 16px 20px !important; }
         }
         @media (max-width: 560px) {
           div[style*="maxWidth: 1100"] { padding: 0 16px !important; }
