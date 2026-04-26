@@ -41,14 +41,57 @@ export const sendDigestToUser = internalAction({
     console.log("[sendDigestToUser] start", { userId, substackUsername, gmailAddress });
 
     // 1. Get subscriptions from Convex
-    const subs = (await ctx.runQuery(
+    const subsFromConvex = (await ctx.runQuery(
       api.users.getSubscriptions,
       { userId }
     )) as SubDoc[];
+    const subs: SubDoc[] = [...subsFromConvex];
     console.log("[sendDigestToUser] subs from Convex:", subs.length, subs.map(s => s.publicationUrl));
 
+    // Fallback: fetch directly from Substack if Convex has nothing saved
     if (!subs.length) {
-      console.log("[sendDigestToUser] ABORT: no subscriptions saved for this user");
+      console.log("[sendDigestToUser] Convex has 0 subs — falling back to Substack API");
+      try {
+        const profileRes = await fetch(
+          `https://substack.com/api/v1/user/${encodeURIComponent(substackUsername)}/public_profile`,
+          { headers: { "User-Agent": "Mozilla/5.0 (compatible; InboxDigest/1.0)", Accept: "application/json" } }
+        );
+        if (profileRes.ok) {
+          const profile = await profileRes.json() as {
+            subscriptions?: Array<{
+              publication?: {
+                name?: string; subdomain?: string; custom_domain?: string;
+                author_name?: string; author?: { name?: string }; subscriber_count?: number;
+              };
+            }>;
+          };
+          (profile.subscriptions ?? [])
+            .filter((s) => s.publication?.name)
+            .forEach((s) => {
+              const pub = s.publication!;
+              const url = pub.custom_domain
+                ? `https://${pub.custom_domain}`
+                : pub.subdomain
+                ? `https://${pub.subdomain}.substack.com`
+                : "";
+              if (url) subs.push({
+                newsletterName: pub.name!,
+                authorName: pub.author?.name ?? pub.author_name ?? "",
+                publicationUrl: url,
+                subscriberCount: pub.subscriber_count,
+              });
+            });
+          console.log("[sendDigestToUser] Substack fallback subs:", subs.length);
+        } else {
+          console.log("[sendDigestToUser] Substack profile fetch non-ok:", profileRes.status);
+        }
+      } catch (err) {
+        console.log("[sendDigestToUser] Substack fallback threw:", String(err));
+      }
+    }
+
+    if (!subs.length) {
+      console.log("[sendDigestToUser] ABORT: 0 subs after both Convex and Substack fallback");
       return;
     }
 
