@@ -133,7 +133,7 @@ export const sendDigestToUser = internalAction({
     const { Resend } = await import("resend");
     const resend = new Resend(resendKey);
     await resend.emails.send({
-      from: "InboxDigest <digest@inboxdigest.app>",
+      from: "InboxDigest <onboarding@resend.dev>",
       to: gmailAddress,
       subject: `Your digest — ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}`,
       html: buildEmailHtml(substackUsername, posts, summaries),
