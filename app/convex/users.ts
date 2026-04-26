@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
 export const getUserByUsername = query({
@@ -51,6 +51,38 @@ export const upsertUser = mutation({
       about: args.about,
       createdAt: Date.now(),
     });
+  },
+});
+
+export const getUsersForDelivery = internalQuery({
+  args: { deliveryTime: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("users")
+      .withIndex("by_deliveryTime", (q) => q.eq("deliveryTime", args.deliveryTime))
+      .collect();
+  },
+});
+
+export const updateUserEmail = mutation({
+  args: {
+    substackUsername: v.string(),
+    gmailAddress: v.string(),
+    deliveryTime: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_substackUsername", (q) =>
+        q.eq("substackUsername", args.substackUsername)
+      )
+      .unique();
+    if (!existing) return null;
+    await ctx.db.patch(existing._id, {
+      gmailAddress: args.gmailAddress,
+      deliveryTime: args.deliveryTime,
+    });
+    return existing._id;
   },
 });
 

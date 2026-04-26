@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as crons from "../crons.js";
+import type * as email from "../email.js";
 import type * as users from "../users.js";
 import type * as waitlist from "../waitlist.js";
 
@@ -18,6 +20,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  crons: typeof crons;
+  email: typeof email;
   users: typeof users;
   waitlist: typeof waitlist;
 }>;

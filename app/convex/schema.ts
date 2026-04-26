@@ -12,7 +12,11 @@ export default defineSchema({
     categories: v.array(v.string()),
     about: v.string(),
     createdAt: v.number(),
-  }).index("by_substackUsername", ["substackUsername"]),
+    gmailAddress: v.optional(v.string()),
+    deliveryTime: v.optional(v.string()),
+  })
+    .index("by_substackUsername", ["substackUsername"])
+    .index("by_deliveryTime", ["deliveryTime"]),
 
   subscriptions: defineTable({
     userId: v.id("users"),

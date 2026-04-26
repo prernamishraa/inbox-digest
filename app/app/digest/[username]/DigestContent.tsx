@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { DigestPost } from "@/app/api/digest/posts/route";
+import type { PostSummary } from "@/app/api/digest/summarise/route";
 
 const NOISE_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`;
 
@@ -118,7 +119,7 @@ function organizeSections(
 
 // ─── SUBCOMPONENTS ────────────────────────────────────────────────────────────
 
-function PostCard({ post, index = 0 }: { post: DigestPost; index?: number }) {
+function PostCard({ post, summary, index = 0 }: { post: DigestPost; summary?: PostSummary; index?: number }) {
   const tag = guessCategory(post.newsletterName, post.authorName);
   return (
     <div className="post-card" style={{ background: "#FFFFFF", padding: "26px 28px 28px", animationDelay: `${0.05 + index * 0.06}s` }}>
@@ -127,10 +128,25 @@ function PostCard({ post, index = 0 }: { post: DigestPost; index?: number }) {
         <span style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11, color: "rgba(26,23,20,0.42)", whiteSpace: "nowrap" as const, flexShrink: 0 }}>{relativeDate(post.post_date)}</span>
       </div>
       <h3 style={{ fontFamily: "var(--font-serif),'Instrument Serif',serif", fontSize: 20, fontWeight: 400, lineHeight: 1.2, letterSpacing: "-0.016em", color: "#1A1714", marginBottom: 5 }}>{post.title}</h3>
-      <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(26,23,20,0.45)", letterSpacing: "0.02em", marginBottom: post.subtitle ? 13 : 16 }}>{post.authorName} · {post.newsletterName}</p>
-      {post.subtitle && (
+      <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(26,23,20,0.45)", letterSpacing: "0.02em", marginBottom: 13 }}>{post.authorName} · {post.newsletterName}</p>
+
+      {summary ? (
+        <>
+          <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 13.5, fontWeight: 400, lineHeight: 1.65, color: "#3D3830", marginBottom: 12 }}>{summary.summary}</p>
+          <div style={{ borderLeft: "2px solid #2D5016", paddingLeft: 12, marginBottom: 16 }}>
+            <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 400, lineHeight: 1.55, color: "rgba(26,23,20,0.60)", fontStyle: "italic", margin: 0 }}>{summary.insight}</p>
+          </div>
+        </>
+      ) : post.subtitle ? (
         <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 13.5, fontWeight: 400, lineHeight: 1.65, color: "#3D3830", marginBottom: 16, display: "-webkit-box", WebkitLineClamp: 4, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>{post.subtitle}</p>
+      ) : null}
+
+      {summary?.reason && (
+        <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11.5, fontWeight: 500, color: "#2D5016", marginBottom: 14, letterSpacing: "0.01em" }}>
+          Why read: {summary.reason}
+        </p>
       )}
+
       <a href={post.canonical_url} target="_blank" rel="noopener noreferrer" className="read-link" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "#2D5016", textDecoration: "none", letterSpacing: "0.01em" }}>
         Read on Substack
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden><path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -139,7 +155,7 @@ function PostCard({ post, index = 0 }: { post: DigestPost; index?: number }) {
   );
 }
 
-function FeaturedCard({ post }: { post: DigestPost }) {
+function FeaturedCard({ post, summary }: { post: DigestPost; summary?: PostSummary }) {
   const tag = guessCategory(post.newsletterName, post.authorName);
   return (
     <div className="post-card" style={{ background: "#FFFFFF", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0, animationDelay: "0.08s" }}>
@@ -152,9 +168,21 @@ function FeaturedCard({ post }: { post: DigestPost }) {
         <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "rgba(26,23,20,0.45)", letterSpacing: "0.02em" }}>{post.authorName} · {post.newsletterName}</p>
       </div>
       <div style={{ padding: "30px 32px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
-        {post.subtitle && (
-          <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 13.5, fontWeight: 400, lineHeight: 1.65, color: "#3D3830", marginBottom: 20, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>{post.subtitle}</p>
-        )}
+        <div>
+          {summary ? (
+            <>
+              <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 13.5, fontWeight: 400, lineHeight: 1.65, color: "#3D3830", marginBottom: 14 }}>{summary.summary}</p>
+              <div style={{ borderLeft: "2px solid #2D5016", paddingLeft: 12, marginBottom: 14 }}>
+                <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, lineHeight: 1.55, color: "rgba(26,23,20,0.60)", fontStyle: "italic", margin: 0 }}>{summary.insight}</p>
+              </div>
+              {summary.reason && (
+                <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 11.5, fontWeight: 500, color: "#2D5016", marginBottom: 18, letterSpacing: "0.01em" }}>Why read: {summary.reason}</p>
+              )}
+            </>
+          ) : post.subtitle ? (
+            <p style={{ fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 13.5, fontWeight: 400, lineHeight: 1.65, color: "#3D3830", marginBottom: 20, display: "-webkit-box", WebkitLineClamp: 5, WebkitBoxOrient: "vertical" as const, overflow: "hidden" }}>{post.subtitle}</p>
+          ) : null}
+        </div>
         <a href={post.canonical_url} target="_blank" rel="noopener noreferrer" className="read-link" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontFamily: "var(--font-sans),'DM Sans',sans-serif", fontSize: 12, fontWeight: 500, color: "#2D5016", textDecoration: "none", letterSpacing: "0.01em", alignSelf: "flex-start" }}>
           Read on Substack
           <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden><path d="M2 9L9 2M9 2H4M9 2V7" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -216,8 +244,10 @@ export function DigestContent({ username }: { username: string }) {
 
   const [subs, setSubs] = useState<Subscription[] | null>(null);
   const [posts, setPosts] = useState<DigestPost[] | null>(null);
+  const [summaries, setSummaries] = useState<PostSummary[] | null>(null);
   const [convexTimedOut, setConvexTimedOut] = useState(false);
   const postsFetchedRef = useRef(false);
+  const summariesFetchedRef = useRef(false);
 
   // Always fetch subscriptions directly from Substack — don't wait for Convex
   useEffect(() => {
@@ -259,10 +289,32 @@ export function DigestContent({ username }: { username: string }) {
       .catch(() => setPosts([]));
   }, [subs, convexReady]);
 
+  // Fetch summaries once posts are ready
+  useEffect(() => {
+    if (summariesFetchedRef.current) return;
+    if (posts === null) return;
+    summariesFetchedRef.current = true;
+
+    if (posts.length === 0) { setSummaries([]); return; }
+
+    const cats = userData?.categories ?? [];
+    fetch("/api/digest/summarise", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ posts: posts.slice(0, 8), categories: cats }),
+    })
+      .then((r) => r.json())
+      .then((d: { summaries?: PostSummary[] }) => setSummaries(d.summaries ?? []))
+      .catch(() => setSummaries([]));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [posts]);
+
   if (!subs || posts === null) return <LoadingState />;
+  if (summaries === null) return <LoadingState message="Analysing your reads…" />;
 
   const userCategories = userData?.categories ?? [];
   const sections = organizeSections(posts, subs, userCategories);
+  const summaryMap = new Map((summaries ?? []).map((s) => [s.id, s]));
 
   const savedMinutes = Math.round(posts.length * 7);
   const savedLabel = savedMinutes >= 60
@@ -325,7 +377,7 @@ export function DigestContent({ username }: { username: string }) {
             <section style={{ paddingTop: 52, animation: "fadeUp 0.5s ease 0.05s both" }}>
               <SectionHeader num="01 / 05" title={<>Missed <em style={{ fontStyle: "italic" }}>this week</em></>} count={`${sections.missed.length} post${sections.missed.length !== 1 ? "s" : ""}`} />
               <div className="card-grid" style={{ marginBottom: 52 }}>
-                {sections.missed.map((p, i) => <PostCard key={p.id} post={p} index={i} />)}
+                {sections.missed.map((p, i) => <PostCard key={p.id} post={p} summary={summaryMap.get(p.id)} index={i} />)}
               </div>
             </section>
           )}
@@ -341,7 +393,7 @@ export function DigestContent({ username }: { username: string }) {
                   : undefined}
               />
               <div className="card-grid-single" style={{ marginBottom: 52 }}>
-                <FeaturedCard post={sections.topCreator} />
+                <FeaturedCard post={sections.topCreator} summary={summaryMap.get(sections.topCreator.id)} />
               </div>
             </section>
           )}
@@ -355,7 +407,7 @@ export function DigestContent({ username }: { username: string }) {
                 count={`${sections.categoryPosts.length} post${sections.categoryPosts.length !== 1 ? "s" : ""}`}
               />
               <div className="card-grid" style={{ marginBottom: 52 }}>
-                {sections.categoryPosts.map((p, i) => <PostCard key={p.id} post={p} index={i} />)}
+                {sections.categoryPosts.map((p, i) => <PostCard key={p.id} post={p} summary={summaryMap.get(p.id)} index={i} />)}
               </div>
             </section>
           )}
@@ -365,7 +417,7 @@ export function DigestContent({ username }: { username: string }) {
             <section style={{ animation: "fadeUp 0.5s ease 0.35s both" }}>
               <SectionHeader num="04 / 05" title={<>Trending <em style={{ fontStyle: "italic" }}>this week</em></>} count={`${sections.trending.length} post${sections.trending.length !== 1 ? "s" : ""}`} />
               <div className="card-grid" style={{ marginBottom: 52 }}>
-                {sections.trending.map((p, i) => <PostCard key={p.id} post={p} index={i} />)}
+                {sections.trending.map((p, i) => <PostCard key={p.id} post={p} summary={summaryMap.get(p.id)} index={i} />)}
               </div>
             </section>
           )}

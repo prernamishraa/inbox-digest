@@ -15,7 +15,8 @@ type Phase =
   | { kind: "love" }
   | { kind: "impressive" }
   | { kind: "saving" }
-  | { kind: "done" };
+  | { kind: "done" }
+  | { kind: "email" };
 
 function phaseText(phase: Phase): string {
   switch (phase.kind) {
@@ -31,6 +32,8 @@ function phaseText(phase: Phase): string {
       return "Almost there…";
     case "done":
       return "Your digest is ready.";
+    case "email":
+      return "";
   }
 }
 
@@ -62,9 +65,13 @@ export function LoadingContent() {
 
   const upsertUser = useMutation(api.users.upsertUser);
   const saveSubscriptions = useMutation(api.users.saveSubscriptions);
+  const updateUserEmail = useMutation(api.users.updateUserEmail);
 
   const [phase, setPhase] = useState<Phase>({ kind: "fetching" });
   const [visible, setVisible] = useState(true);
+  const [emailInput, setEmailInput] = useState("");
+  const [deliveryTime, setDeliveryTime] = useState<"7am" | "12pm" | "6pm" | null>(null);
+  const [emailSaving, setEmailSaving] = useState(false);
 
   const didRun = useRef(false);
 
@@ -128,11 +135,11 @@ export function LoadingContent() {
         delay(3000),
       ]);
 
-      // 4. Redirect
+      // 4. Show done → then prompt for email delivery
       await delay(400);
       transition({ kind: "done" });
-      await delay(700);
-      router.push(`/digest/${username}`);
+      await delay(900);
+      transition({ kind: "email" });
     }
 
     run();
@@ -142,6 +149,20 @@ export function LoadingContent() {
   const text = phaseText(phase);
   const sub = phaseSubtext(phase);
   const isDone = phase.kind === "done";
+  const isEmail = phase.kind === "email";
+
+  async function handleEmailSubmit() {
+    if (!emailInput || !deliveryTime) return;
+    setEmailSaving(true);
+    try {
+      await updateUserEmail({ substackUsername: username, gmailAddress: emailInput, deliveryTime });
+    } catch { /* non-fatal */ }
+    router.push(`/digest/${username}`);
+  }
+
+  function handleSkip() {
+    router.push(`/digest/${username}`);
+  }
 
   return (
     <div
@@ -208,103 +229,198 @@ export function LoadingContent() {
           textAlign: "center",
         }}
       >
-        {/* Message block */}
-        <div
-          style={{
-            opacity: visible ? 1 : 0,
-            transform: visible ? "translateY(0)" : "translateY(10px)",
-            transition: "opacity 0.4s ease, transform 0.4s ease",
-            maxWidth: 600,
-          }}
-        >
-          <p
-            style={{
-              fontFamily: "var(--font-serif), 'Instrument Serif', serif",
-              fontSize: "clamp(28px, 5vw, 48px)",
-              fontWeight: 400,
-              lineHeight: 1.2,
-              letterSpacing: "-0.02em",
-              color: "#1A1714",
-              marginBottom: sub ? 12 : 0,
-            }}
-          >
-            {text}
-          </p>
-
-          {sub && (
-            <p
-              style={{
-                fontFamily: "var(--font-serif), 'Instrument Serif', serif",
-                fontSize: "clamp(28px, 5vw, 48px)",
-                fontWeight: 400,
-                fontStyle: "italic",
-                lineHeight: 1.2,
-                letterSpacing: "-0.02em",
-                color: "#2D5016",
-              }}
-            >
-              {sub}
+        {isEmail ? (
+          /* ── Email capture ──────────────────────────────────────────── */
+          <div style={{ width: "100%", maxWidth: 440, animation: "fadeUp 0.5s ease both" }}>
+            <p style={{ fontFamily: "var(--font-serif), 'Instrument Serif', serif", fontSize: "clamp(26px, 4vw, 38px)", fontWeight: 400, lineHeight: 1.2, letterSpacing: "-0.02em", color: "#1A1714", marginBottom: 8, textAlign: "center" }}>
+              Get this digest in your inbox.
             </p>
-          )}
-        </div>
+            <p style={{ fontFamily: "var(--font-sans), 'DM Sans', sans-serif", fontSize: 14, color: "rgba(26,23,20,0.48)", marginBottom: 32, textAlign: "center", lineHeight: 1.5 }}>
+              We&apos;ll send your personalised digest daily at your chosen time.
+            </p>
 
-        {/* Spinner / done indicator */}
-        <div style={{ marginTop: 52 }}>
-          {isDone ? (
-            <div
+            {/* Gmail input */}
+            <input
+              type="email"
+              placeholder="you@gmail.com"
+              value={emailInput}
+              onChange={(e) => setEmailInput(e.target.value)}
               style={{
-                width: 36,
-                height: 36,
-                borderRadius: "50%",
-                background: "rgba(45,80,22,0.08)",
-                border: "1.5px solid rgba(45,80,22,0.32)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                animation: "scaleIn 0.3s ease both",
-              }}
-            >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
-                <path
-                  d="M3 8L6.5 11.5L13 5"
-                  stroke="#2D5016"
-                  strokeWidth="1.8"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </div>
-          ) : (
-            <div
-              style={{
-                width: 28,
-                height: 28,
-                borderRadius: "50%",
-                border: "2px solid rgba(45,80,22,0.12)",
-                borderTopColor: "rgba(45,80,22,0.60)",
-                animation: "spin 0.9s linear infinite",
+                width: "100%",
+                boxSizing: "border-box" as const,
+                padding: "14px 16px",
+                fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                fontSize: 14,
+                color: "#1A1714",
+                background: "#FFFFFF",
+                border: "1.5px solid rgba(26,23,20,0.18)",
+                borderRadius: 4,
+                outline: "none",
+                marginBottom: 16,
               }}
             />
-          )}
-        </div>
 
-        {/* Subscription count hint */}
-        {(phase.kind === "love" ||
-          phase.kind === "impressive" ||
-          phase.kind === "saving") && (
-          <p
-            style={{
-              marginTop: 40,
-              fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
-              fontSize: 13,
-              fontWeight: 400,
-              color: "rgba(26,23,20,0.42)",
-              letterSpacing: "0.02em",
-              animation: "fadeUp 0.5s ease both",
-            }}
-          >
-            Building your personalised digest…
-          </p>
+            {/* Time picker */}
+            <p style={{ fontFamily: "var(--font-sans), 'DM Sans', sans-serif", fontSize: 11, fontWeight: 600, letterSpacing: "0.09em", textTransform: "uppercase" as const, color: "rgba(26,23,20,0.40)", marginBottom: 10 }}>Delivery time (IST)</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 24 }}>
+              {([
+                { key: "7am" as const, label: "Morning", sub: "7:00 AM" },
+                { key: "12pm" as const, label: "Afternoon", sub: "12:00 PM" },
+                { key: "6pm" as const, label: "Evening", sub: "6:00 PM" },
+              ]).map((opt) => (
+                <button
+                  key={opt.key}
+                  onClick={() => setDeliveryTime(opt.key)}
+                  style={{
+                    padding: "12px 10px",
+                    border: deliveryTime === opt.key ? "1.5px solid #2D5016" : "1.5px solid rgba(26,23,20,0.14)",
+                    borderRadius: 4,
+                    background: deliveryTime === opt.key ? "rgba(45,80,22,0.06)" : "#FFFFFF",
+                    cursor: "pointer",
+                    textAlign: "center" as const,
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  <div style={{ fontFamily: "var(--font-sans), 'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, color: deliveryTime === opt.key ? "#2D5016" : "#1A1714", marginBottom: 2 }}>{opt.label}</div>
+                  <div style={{ fontFamily: "var(--font-sans), 'DM Sans', sans-serif", fontSize: 11, color: "rgba(26,23,20,0.45)" }}>{opt.sub}</div>
+                </button>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <button
+              onClick={handleEmailSubmit}
+              disabled={!emailInput || !deliveryTime || emailSaving}
+              style={{
+                width: "100%",
+                padding: "15px 20px",
+                background: (!emailInput || !deliveryTime) ? "rgba(45,80,22,0.30)" : "#2D5016",
+                border: "none",
+                borderRadius: 4,
+                fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                fontSize: 14,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                color: "#FFFFFF",
+                cursor: (!emailInput || !deliveryTime || emailSaving) ? "not-allowed" : "pointer",
+                marginBottom: 16,
+                transition: "background 0.2s ease",
+              }}
+            >
+              {emailSaving ? "Saving…" : "Send my daily digest"}
+            </button>
+
+            {/* Skip */}
+            <div style={{ textAlign: "center" as const }}>
+              <button
+                onClick={handleSkip}
+                style={{ background: "none", border: "none", fontFamily: "var(--font-sans), 'DM Sans', sans-serif", fontSize: 13, color: "rgba(26,23,20,0.42)", cursor: "pointer", textDecoration: "underline" }}
+              >
+                Skip for now — just show me the digest
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Message block */}
+            <div
+              style={{
+                opacity: visible ? 1 : 0,
+                transform: visible ? "translateY(0)" : "translateY(10px)",
+                transition: "opacity 0.4s ease, transform 0.4s ease",
+                maxWidth: 600,
+              }}
+            >
+              <p
+                style={{
+                  fontFamily: "var(--font-serif), 'Instrument Serif', serif",
+                  fontSize: "clamp(28px, 5vw, 48px)",
+                  fontWeight: 400,
+                  lineHeight: 1.2,
+                  letterSpacing: "-0.02em",
+                  color: "#1A1714",
+                  marginBottom: sub ? 12 : 0,
+                }}
+              >
+                {text}
+              </p>
+
+              {sub && (
+                <p
+                  style={{
+                    fontFamily: "var(--font-serif), 'Instrument Serif', serif",
+                    fontSize: "clamp(28px, 5vw, 48px)",
+                    fontWeight: 400,
+                    fontStyle: "italic",
+                    lineHeight: 1.2,
+                    letterSpacing: "-0.02em",
+                    color: "#2D5016",
+                  }}
+                >
+                  {sub}
+                </p>
+              )}
+            </div>
+
+            {/* Spinner / done indicator */}
+            <div style={{ marginTop: 52 }}>
+              {isDone ? (
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: "50%",
+                    background: "rgba(45,80,22,0.08)",
+                    border: "1.5px solid rgba(45,80,22,0.32)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    animation: "scaleIn 0.3s ease both",
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                    <path
+                      d="M3 8L6.5 11.5L13 5"
+                      stroke="#2D5016"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </div>
+              ) : (
+                <div
+                  style={{
+                    width: 28,
+                    height: 28,
+                    borderRadius: "50%",
+                    border: "2px solid rgba(45,80,22,0.12)",
+                    borderTopColor: "rgba(45,80,22,0.60)",
+                    animation: "spin 0.9s linear infinite",
+                  }}
+                />
+              )}
+            </div>
+
+            {/* Subscription count hint */}
+            {(phase.kind === "love" ||
+              phase.kind === "impressive" ||
+              phase.kind === "saving") && (
+              <p
+                style={{
+                  marginTop: 40,
+                  fontFamily: "var(--font-sans), 'DM Sans', sans-serif",
+                  fontSize: 13,
+                  fontWeight: 400,
+                  color: "rgba(26,23,20,0.42)",
+                  letterSpacing: "0.02em",
+                  animation: "fadeUp 0.5s ease both",
+                }}
+              >
+                Building your personalised digest…
+              </p>
+            )}
+          </>
         )}
       </main>
 
