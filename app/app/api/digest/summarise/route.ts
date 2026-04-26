@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import type { DigestPost } from "@/app/api/digest/posts/route";
 
 export interface PostSummary {
@@ -22,10 +22,10 @@ export async function POST(req: Request) {
 
   if (!posts.length) return NextResponse.json({ summaries: [] });
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) return NextResponse.json({ summaries: [] });
 
-  const client = new Anthropic({ apiKey });
+  const client = new OpenAI({ apiKey });
 
   const postList = posts
     .map((p) =>
@@ -52,16 +52,19 @@ Return a JSON array only — no markdown fences, no extra text:
 [{"id": <number>, "summary": "...", "reason": "...", "insight": "..."}]`;
 
   try {
-    const msg = await client.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 2048,
+    const res = await client.chat.completions.create({
+      model: "gpt-4o-mini",
       messages: [{ role: "user", content: prompt }],
+      max_tokens: 2048,
+      response_format: { type: "json_object" },
     });
 
-    const raw = msg.content[0].type === "text" ? msg.content[0].text.trim() : "[]";
-    // Strip accidental markdown fences
-    const json = raw.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
-    const summaries = JSON.parse(json) as PostSummary[];
+    const raw = res.choices[0]?.message?.content?.trim() ?? "{}";
+    // gpt-4o-mini with json_object wraps in an object — unwrap if needed
+    const parsed = JSON.parse(raw);
+    const summaries: PostSummary[] = Array.isArray(parsed)
+      ? parsed
+      : (parsed.summaries ?? parsed.posts ?? Object.values(parsed)[0] ?? []);
     return NextResponse.json({ summaries });
   } catch {
     return NextResponse.json({ summaries: [] });

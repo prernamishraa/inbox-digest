@@ -101,11 +101,11 @@ export const sendDigestToUser = internalAction({
 
     // 3. Generate Claude summaries
     let summaries: PostSummary[] = [];
-    const anthropicKey = process.env.ANTHROPIC_API_KEY;
-    if (anthropicKey) {
+    const openaiKey = process.env.OPENAI_API_KEY;
+    if (openaiKey) {
       try {
-        const Anthropic = (await import("@anthropic-ai/sdk")).default;
-        const client = new Anthropic({ apiKey: anthropicKey });
+        const OpenAI = (await import("openai")).default;
+        const client = new OpenAI({ apiKey: openaiKey });
         const postList = posts
           .map((p) =>
             `ID:${p.id} | "${p.title}" by ${p.authorName} (${p.newsletterName})` +
@@ -113,15 +113,15 @@ export const sendDigestToUser = internalAction({
           )
           .join("\n\n---\n\n");
         const catLine = categories.length ? `Reader interests: ${categories.join(", ")}.` : "";
-        const msg = await client.messages.create({
-          model: "claude-sonnet-4-20250514",
+        const res = await client.chat.completions.create({
+          model: "gpt-4o-mini",
           max_tokens: 2048,
           messages: [{
             role: "user",
-            content: `${catLine}\n\nFor each post return JSON array: [{id, summary (2 sentences), reason (1 sentence why this reader cares), insight (1 key takeaway)}].\n\nPosts:\n${postList}\n\nReturn only the JSON array.`,
+            content: `${catLine}\n\nFor each post return a JSON array: [{id, summary (2 sentences), reason (1 sentence why this reader cares), insight (1 key takeaway)}].\n\nPosts:\n${postList}\n\nReturn only the JSON array, no extra text.`,
           }],
         });
-        const text = (msg.content[0].type === "text" ? msg.content[0].text : "[]").trim();
+        const text = (res.choices[0]?.message?.content ?? "[]").trim();
         const json = text.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
         summaries = JSON.parse(json) as PostSummary[];
       } catch { /* summaries optional */ }
