@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inbox Digest — Trial Gate Mockup</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #F5F0E8;
+      font-family: 'DM Sans', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+    }
+
+    /* ── Noise texture ──────────────────────────────────── */
+    .noise {
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 200px 200px;
+      opacity: 0.025;
+    }
+
+    /* ── Background digest (blurred) ─────────────────────── */
+    .digest-bg {
+      position: fixed; inset: 0; z-index: 1;
+      overflow: hidden;
+      filter: blur(5px);
+      opacity: 0.55;
+      transform: scale(1.02); /* hide blur edge artifacts */
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .amber-bar { height: 3px; background: #FFD264; }
+
+    .digest-nav {
+      border-bottom: 1.5px solid #1A1714;
+      padding: 20px 40px;
+      display: flex; align-items: baseline; justify-content: space-between;
+    }
+    .digest-nav .logo {
+      font-family: 'Instrument Serif', serif;
+      font-size: 17px; color: #1A1714;
+    }
+    .digest-nav .logo span { color: #C9981A; }
+    .digest-nav .meta {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.07em;
+      text-transform: uppercase; color: rgba(26,23,20,0.42);
+    }
+
+    .digest-body { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+    .digest-hero { padding: 40px 0 32px; }
+    .digest-hero h1 {
+      font-family: 'Instrument Serif', serif;
+      font-size: 54px; font-weight: 400; line-height: 1.05;
+      letter-spacing: -0.025em; color: #1A1714; margin-bottom: 14px;
+    }
+    .digest-hero p {
+      font-size: 14px; color: rgba(26,23,20,0.50); margin-bottom: 28px;
+    }
+    .stats-row {
+      display: flex; border: 1px solid rgba(26,23,20,0.10);
+      border-radius: 4px; overflow: hidden; background: #EDE7D8;
+    }
+    .stat {
+      flex: 1; padding: 14px 20px;
+      border-right: 1px solid rgba(26,23,20,0.10);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-val {
+      font-family: 'Instrument Serif', serif;
+      font-size: 30px; line-height: 1; color: #1A1714; margin-bottom: 3px;
+    }
+    .stat-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: rgba(26,23,20,0.42);
+    }
+
+    .section-hdr {
+      display: flex; align-items: flex-end; justify-content: space-between;
+      padding: 36px 0 16px; border-bottom: 1.5px solid #1A1714; margin-bottom: 20px;
+    }
+    .section-num {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(26,23,20,0.40); margin-bottom: 4px;
+    }
+    .section-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 30px; font-weight: 400; color: #1A1714; line-height: 1.1;
+    }
+    .section-title em { font-style: italic; }
+
+    .card-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: rgba(26,23,20,0.08); border: 1px solid rgba(26,23,20,0.08);
+      border-radius: 4px; overflow: hidden;
+    }
+    .post-card { background: #fff; padding: 24px 26px; }
+    .card-tag {
+      display: inline-block; background: #2D5016; color: #fff;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.07em;
+      text-transform: uppercase; padding: 3px 9px; border-radius: 2px; margin-bottom: 10px;
+    }
+    .card-title {
+      font-family: 'Instrument Serif', serif;
+      font-size: 19px; font-weight: 400; line-height: 1.25;
+      color: #1A1714; margin-bottom: 5px;
+    }
+    .card-author { font-size: 12px; color: rgba(26,23,20,0.45); margin-bottom: 10px; }
+    .card-body { font-size: 13px; line-height: 1.6; color: #3D3830; }
+
+    /* ── Overlay ─────────────────────────────────────────── */
+    .overlay {
+      position: fixed; inset: 0; z-index: 10;
+      background: rgba(245, 240, 232, 0.72);
+      backdrop-filter: blur(2px);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+
+    /* ── Gate card ───────────────────────────────────────── */
+    .gate-card {
+      background: #FFFFFF;
+      border: 1px solid rgba(26,23,20,0.10);
+      border-radius: 6px;
+      width: 100%; max-width: 460px;
+      overflow: hidden;
+      box-shadow:
+        0 2px 4px rgba(26,23,20,0.04),
+        0 12px 40px rgba(26,23,20,0.10),
+        0 32px 80px rgba(26,23,20,0.08);
+      animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+
+    @keyframes riseIn {
+      from { opacity: 0; transform: translateY(24px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0)    scale(1); }
+    }
+
+    .gate-amber { height: 3px; background: #FFD264; }
+
+    .gate-body { padding: 40px 40px 36px; }
+
+    .gate-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-size: 10px; font-weight: 600; letter-spacing: 0.12em;
+      text-transform: uppercase; color: #2D5016; margin-bottom: 16px;
+    }
+    .gate-eyebrow::before {
+      content: '';
+      display: block; width: 20px; height: 1.5px; background: #2D5016; opacity: 0.5;
+    }
+
+    .gate-headline {
+      font-family: 'Instrument Serif', serif;
+      font-size: 34px; font-weight: 400; line-height: 1.1;
+      letter-spacing: -0.02em; color: #1A1714; margin-bottom: 12px;
+    }
+
+    .gate-sub {
+      font-size: 14px; line-height: 1.65; color: rgba(26,23,20,0.55);
+      margin-bottom: 32px;
+    }
+
+    /* Divider */
+    .gate-divider {
+      height: 1px; background: rgba(26,23,20,0.08); margin-bottom: 28px;
+    }
+
+    /* Price block */
+    .price-block {
+      display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px;
+    }
+    .price-currency {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 22px; font-weight: 400; color: #1A1714; margin-top: 4px;
+    }
+    .price-amount {
+      font-family: 'Instrument Serif', serif;
+      font-size: 56px; line-height: 1; letter-spacing: -0.03em; color: #1A1714;
+    }
+    .price-period {
+      font-size: 14px; font-weight: 400; color: rgba(26,23,20,0.45); margin-bottom: 2px;
+    }
+    .price-note {
+      font-size: 12px; color: rgba(26,23,20,0.40); margin-bottom: 28px;
+      letter-spacing: 0.01em;
+    }
+
+    /* What's included */
+    .includes {
+      display: flex; flex-direction: column; gap: 8px; margin-bottom: 32px;
+    }
+    .include-item {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 13px; color: rgba(26,23,20,0.70);
+    }
+    .include-dot {
+      width: 5px; height: 5px; border-radius: 50%; background: #2D5016; flex-shrink: 0;
+    }
+
+    /* CTA */
+    .cta-btn {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      width: 100%; padding: 16px 20px;
+      background: #2D5016; border: none; border-radius: 4px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 600; letter-spacing: 0.03em; color: #FFFFFF;
+      cursor: pointer; margin-bottom: 14px;
+      transition: background 0.18s ease, transform 0.12s ease;
+    }
+    .cta-btn:hover { background: #3a6620; transform: translateY(-1px); }
+    .cta-btn .arrow {
+      font-size: 16px; transition: transform 0.18s ease;
+    }
+    .cta-btn:hover .arrow { transform: translateX(3px); }
+
+    .cancel-note {
+      text-align: center; font-size: 12px; color: rgba(26,23,20,0.38);
+      letter-spacing: 0.01em;
+    }
+
+    /* Digest blurred bg skeletons */
+    .shimmer {
+      background: linear-gradient(90deg, rgba(26,23,20,0.06) 25%, rgba(26,23,20,0.10) 50%, rgba(26,23,20,0.06) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.8s infinite;
+      border-radius: 2px;
+    }
+    @keyframes shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="noise"></div>
+
+<!-- ── Blurred digest page behind the gate ───────────────────────────── -->
+<div class="digest-bg">
+  <div class="amber-bar"></div>
+  <nav class="digest-nav">
+    <div class="logo">Inbox<span>Digest</span></div>
+    <div class="meta">Sunday, 27 April 2025 · @prernamishraa</div>
+  </nav>
+  <div class="digest-body">
+    <div class="digest-hero">
+      <h1>The best of your inbox,<br><em>curated</em> for you.</h1>
+      <p>Pulled from 34 newsletters you follow — we found the pieces worth your time.</p>
+      <div class="stats-row">
+        <div class="stat"><div class="stat-val">34</div><div class="stat-label">Newsletters tracked</div></div>
+        <div class="stat"><div class="stat-val">18</div><div class="stat-label">Posts fetched</div></div>
+        <div class="stat"><div class="stat-val">2h 6m</div><div class="stat-label">Reading time saved</div></div>
+      </div>
+    </div>
+    <div class="section-hdr">
+      <div>
+        <div class="section-num">01 / 05</div>
+        <div class="section-title">Missed <em>this week</em></div>
+      </div>
+      <div style="font-size:12px;color:rgba(26,23,20,0.40);margin-bottom:4px;">2 posts</div>
+    </div>
+    <div class="card-grid">
+      <div class="post-card">
+        <div class="card-tag">Technology</div>
+        <div class="card-title">The AI moment nobody is talking about</div>
+        <div class="card-author">Lenny Rachitsky · Lenny's Newsletter</div>
+        <div class="card-body">Product teams are quietly rebuilding their entire roadmapping process around AI-native workflows — and the results are surprising.</div>
+      </div>
+      <div class="post-card">
+        <div class="card-tag">Finance</div>
+        <div class="card-title">Why the rupee is at an inflection point</div>
+        <div class="card-author">Mihir Sharma · The Seen and the Unseen</div>
+        <div class="card-body">Three macro forces converging in Q2 2025 that every Indian investor should understand before making portfolio decisions.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Overlay ────────────────────────────────────────────────────────── -->
+<div class="overlay">
+
+  <!-- ── Gate card ──────────────────────────────────────────────────── -->
+  <div class="gate-card">
+    <div class="gate-amber"></div>
+    <div class="gate-body">
+
+      <div class="gate-eyebrow">Free trial ended</div>
+
+      <h1 class="gate-headline">Your free trial<br>has ended.</h1>
+
+      <p class="gate-sub">
+        You've had 7 days of your personal Substack digest.
+        Subscribe to keep it coming — daily, curated, in your inbox.
+      </p>
+
+      <div class="gate-divider"></div>
+
+      <div class="price-block">
+        <span class="price-currency">₹</span>
+        <span class="price-amount">299</span>
+        <span class="price-period">/ month</span>
+      </div>
+      <div class="price-note">Billed monthly · first charge after free trial</div>
+
+      <div class="includes">
+        <div class="include-item">
+          <div class="include-dot"></div>
+          Daily digest from all your Substack subscriptions
+        </div>
+        <div class="include-item">
+          <div class="include-dot"></div>
+          AI summaries, insights and reasons to read each post
+        </div>
+        <div class="include-item">
+          <div class="include-dot"></div>
+          Delivered to your inbox at your chosen time
+        </div>
+      </div>
+
+      <button class="cta-btn">
+        Subscribe now
+        <span class="arrow">→</span>
+      </button>
+
+      <p class="cancel-note">Cancel anytime · No questions asked</p>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>
