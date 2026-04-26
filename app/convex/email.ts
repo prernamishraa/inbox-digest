@@ -38,14 +38,19 @@ export const sendDigestToUser = internalAction({
   },
   handler: async (ctx, args) => {
     const { userId, substackUsername, gmailAddress, categories } = args;
+    console.log("[sendDigestToUser] start", { userId, substackUsername, gmailAddress });
 
     // 1. Get subscriptions from Convex
     const subs = (await ctx.runQuery(
       api.users.getSubscriptions,
       { userId }
     )) as SubDoc[];
+    console.log("[sendDigestToUser] subs from Convex:", subs.length, subs.map(s => s.publicationUrl));
 
-    if (!subs.length) return;
+    if (!subs.length) {
+      console.log("[sendDigestToUser] ABORT: no subscriptions saved for this user");
+      return;
+    }
 
     // 2. Fetch posts from Substack
     const eligible = subs
@@ -56,6 +61,12 @@ export const sendDigestToUser = internalAction({
       })
       .sort((a, b) => (b.subscriberCount ?? 0) - (a.subscriberCount ?? 0))
       .slice(0, 8);
+    console.log("[sendDigestToUser] eligible (substack-only):", eligible.length, "of", subs.length, "total");
+
+    if (!eligible.length) {
+      console.log("[sendDigestToUser] ABORT: no .substack.com URLs — all subs are on custom domains");
+      return;
+    }
 
     const allPosts: DigestPost[] = [];
     await Promise.all(
@@ -72,36 +83,46 @@ export const sendDigestToUser = internalAction({
             }
           );
           clearTimeout(tid);
-          if (!res.ok) return;
+          if (!res.ok) {
+            console.log("[sendDigestToUser] posts fetch non-ok for", subdomain, res.status);
+            return;
+          }
           const raw = (await res.json()) as Array<{
             id: number; title?: string; subtitle?: string;
             post_date?: string; canonical_url?: string; type?: string;
           }>;
-          raw
-            .filter((p) => p.title && (p.type === "newsletter" || p.type === "thread" || !p.type))
-            .forEach((p) => allPosts.push({
-              id: p.id,
-              title: p.title!,
-              subtitle: p.subtitle ?? "",
-              post_date: p.post_date ?? new Date().toISOString(),
-              canonical_url: p.canonical_url ?? sub.publicationUrl,
-              newsletterName: sub.newsletterName,
-              authorName: sub.authorName,
-              subdomain,
-            }));
-        } catch { /* skip failed pubs */ }
+          const filtered = raw.filter((p) => p.title && (p.type === "newsletter" || p.type === "thread" || !p.type));
+          console.log("[sendDigestToUser]", subdomain, "→", filtered.length, "posts");
+          filtered.forEach((p) => allPosts.push({
+            id: p.id,
+            title: p.title!,
+            subtitle: p.subtitle ?? "",
+            post_date: p.post_date ?? new Date().toISOString(),
+            canonical_url: p.canonical_url ?? sub.publicationUrl,
+            newsletterName: sub.newsletterName,
+            authorName: sub.authorName,
+            subdomain,
+          }));
+        } catch (err) {
+          console.log("[sendDigestToUser] posts fetch threw for", sub.publicationUrl, String(err));
+        }
       })
     );
+    console.log("[sendDigestToUser] total posts fetched:", allPosts.length);
 
-    if (!allPosts.length) return;
+    if (!allPosts.length) {
+      console.log("[sendDigestToUser] ABORT: all post fetches failed or returned 0 results");
+      return;
+    }
 
     const posts = allPosts
       .sort((a, b) => new Date(b.post_date).getTime() - new Date(a.post_date).getTime())
       .slice(0, 8);
 
-    // 3. Generate Claude summaries
+    // 3. Generate summaries via OpenAI
     let summaries: PostSummary[] = [];
     const openaiKey = process.env.OPENAI_API_KEY;
+    console.log("[sendDigestToUser] OPENAI_API_KEY present:", !!openaiKey);
     if (openaiKey) {
       try {
         const OpenAI = (await import("openai")).default;
@@ -124,20 +145,32 @@ export const sendDigestToUser = internalAction({
         const text = (res.choices[0]?.message?.content ?? "[]").trim();
         const json = text.replace(/^```(?:json)?\n?/i, "").replace(/\n?```$/i, "");
         summaries = JSON.parse(json) as PostSummary[];
-      } catch { /* summaries optional */ }
+        console.log("[sendDigestToUser] summaries generated:", summaries.length);
+      } catch (err) {
+        console.log("[sendDigestToUser] OpenAI threw:", String(err));
+      }
     }
 
     // 4. Build + send email
     const resendKey = process.env.RESEND_API_KEY;
-    if (!resendKey) return;
-    const { Resend } = await import("resend");
-    const resend = new Resend(resendKey);
-    await resend.emails.send({
-      from: "InboxDigest <onboarding@resend.dev>",
-      to: gmailAddress,
-      subject: `Your digest — ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}`,
-      html: buildEmailHtml(substackUsername, posts, summaries),
-    });
+    console.log("[sendDigestToUser] RESEND_API_KEY present:", !!resendKey);
+    if (!resendKey) {
+      console.log("[sendDigestToUser] ABORT: RESEND_API_KEY not set");
+      return;
+    }
+    try {
+      const { Resend } = await import("resend");
+      const resend = new Resend(resendKey);
+      const result = await resend.emails.send({
+        from: "InboxDigest <onboarding@resend.dev>",
+        to: gmailAddress,
+        subject: `Your digest — ${new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}`,
+        html: buildEmailHtml(substackUsername, posts, summaries),
+      });
+      console.log("[sendDigestToUser] Resend result:", JSON.stringify(result));
+    } catch (err) {
+      console.log("[sendDigestToUser] Resend threw:", String(err));
+    }
   },
 });
 
