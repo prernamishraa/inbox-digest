@@ -50,6 +50,7 @@ export const upsertUser = mutation({
       categories: args.categories,
       about: args.about,
       createdAt: Date.now(),
+      trialStartedAt: Date.now(),
     });
   },
 });
@@ -81,6 +82,27 @@ export const updateUserEmail = mutation({
     await ctx.db.patch(existing._id, {
       gmailAddress: args.gmailAddress,
       deliveryTime: args.deliveryTime,
+    });
+    return existing._id;
+  },
+});
+
+export const markUserPaid = mutation({
+  args: {
+    substackUsername: v.string(),
+    razorpaySubscriptionId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_substackUsername", (q) =>
+        q.eq("substackUsername", args.substackUsername)
+      )
+      .unique();
+    if (!existing) return null;
+    await ctx.db.patch(existing._id, {
+      isPaid: true,
+      razorpaySubscriptionId: args.razorpaySubscriptionId,
     });
     return existing._id;
   },

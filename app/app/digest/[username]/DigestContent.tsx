@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import type { DigestPost } from "@/app/api/digest/posts/route";
 import type { PostSummary } from "@/app/api/digest/summarise/route";
+import { TrialGate } from "./TrialGate";
 
 const NOISE_SVG = `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`;
 
@@ -316,13 +317,21 @@ export function DigestContent({ username }: { username: string }) {
   const sections = organizeSections(posts, subs, userCategories);
   const summaryMap = new Map((summaries ?? []).map((s) => [s.id, s]));
 
+  const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+  const trialExpired =
+    userData?.trialStartedAt != null &&
+    Date.now() - userData.trialStartedAt > SEVEN_DAYS &&
+    !userData.isPaid;
+
   const savedMinutes = Math.round(posts.length * 7);
   const savedLabel = savedMinutes >= 60
     ? `${Math.floor(savedMinutes / 60)}h ${savedMinutes % 60}m`
     : `${savedMinutes} min`;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F5F0E8", position: "relative" }}>
+    <>
+    {trialExpired && <TrialGate username={username} />}
+    <div style={{ minHeight: "100vh", background: "#F5F0E8", position: "relative", filter: trialExpired ? "blur(3px)" : "none", pointerEvents: trialExpired ? "none" : "auto" }}>
       <div aria-hidden style={{ position: "fixed", inset: 0, backgroundImage: NOISE_SVG, backgroundSize: "200px 200px", opacity: 0.025, pointerEvents: "none", zIndex: 0 }} />
 
       <div style={{ position: "relative", zIndex: 1 }}>
@@ -496,5 +505,6 @@ export function DigestContent({ username }: { username: string }) {
         }
       `}</style>
     </div>
+    </>
   );
 }

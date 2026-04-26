@@ -14,6 +14,9 @@ export default defineSchema({
     createdAt: v.number(),
     gmailAddress: v.optional(v.string()),
     deliveryTime: v.optional(v.string()),
+    trialStartedAt: v.optional(v.number()),
+    isPaid: v.optional(v.boolean()),
+    razorpaySubscriptionId: v.optional(v.string()),
   })
     .index("by_substackUsername", ["substackUsername"])
     .index("by_deliveryTime", ["deliveryTime"]),

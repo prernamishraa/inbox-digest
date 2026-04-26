@@ -40,6 +40,17 @@ export const sendDigestToUser = internalAction({
     const { userId, substackUsername, gmailAddress, categories } = args;
     console.log("[sendDigestToUser] start", { userId, substackUsername, gmailAddress });
 
+    // Guard: skip if trial expired and user has not paid
+    const user = await ctx.runQuery(api.users.getUserByUsername, { substackUsername });
+    if (user?.trialStartedAt) {
+      const trialAge = Date.now() - user.trialStartedAt;
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+      if (trialAge > sevenDays && !user.isPaid) {
+        console.log("[sendDigestToUser] SKIP: trial expired and not paid");
+        return;
+      }
+    }
+
     // 1. Get subscriptions from Convex
     const subsFromConvex = (await ctx.runQuery(
       api.users.getSubscriptions,
